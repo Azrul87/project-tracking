@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Be My Valentine?</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Quicksand:wght@500;700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --primary-pink: #ffafd6;
+            --heart-red: #ff4d6d;
+            --text-color: #590d22;
+            --bg-gradient: linear-gradient(135deg, #fff0f5 0%, #ffe4e1 100%);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: var(--bg-gradient);
+            font-family: 'Quicksand', sans-serif;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Floating Hearts Background */
+        .bg-hearts {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .bg-heart {
+            position: absolute;
+            color: rgba(255, 182, 193, 0.4);
+            font-size: 2rem;
+            animation: floatUp linear infinite;
+        }
+
+        @keyframes floatUp {
+            0% {
+                transform: translateY(110vh) rotate(0deg);
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(-10vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 3rem;
+            border-radius: 30px;
+            box-shadow: 0 10px 40px rgba(255, 105, 180, 0.2);
+            text-align: center;
+            z-index: 10;
+            max-width: 90%;
+            width: 450px;
+            border: 4px solid white;
+            transition: transform 0.3s ease;
+        }
+
+        .container:hover {
+            transform: translateY(-5px);
+        }
+
+        h1 {
+            font-family: 'Pacifico', cursive;
+            color: var(--text-color);
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+            text-shadow: 2px 2px 0px rgba(255, 255, 255, 0.5);
+        }
+
+        .meme-container {
+            margin-bottom: 2rem;
+            position: relative;
+            height: 250px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Cute Bear SVG */
+        svg.bear-svg {
+            width: 220px;
+            height: 220px;
+            filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.1));
+            animation: bounce 2s infinite ease-in-out;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-15px);
+            }
+        }
+
+        .buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            min-height: 80px;
+            /* Space for moving button */
+        }
+
+        .btn {
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.3rem;
+            font-weight: 700;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-family: 'Quicksand', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-yes {
+            background: var(--heart-red);
+            color: white;
+            box-shadow: 0 5px 20px rgba(255, 77, 109, 0.4);
+        }
+
+        .btn-yes:hover {
+            background: #ff3355;
+            box-shadow: 0 8px 25px rgba(255, 77, 109, 0.6);
+        }
+
+        .btn-no {
+            background: #e9ecef;
+            color: #666;
+            position: relative;
+            /* Changed to relative initially */
+        }
+
+        /* When moving, it becomes absolute */
+        .btn-no.moving {
+            position: fixed;
+            /* Fixed to viewport so it can escape anywhere */
+            z-index: 100;
+        }
+
+        .success-text {
+            display: none;
+            font-family: 'Pacifico', cursive;
+            color: var(--heart-red);
+            font-size: 2rem;
+            margin-top: 1rem;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .container {
+                padding: 2rem;
+                width: 85%;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .buttons {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Floating Hearts Background -->
+    <div class="bg-hearts" id="heartsContainer"></div>
+
+    <div class="container">
+        <div class="meme-container" id="visualContainer">
+            <!-- Starting Visual: Cute Bear -->
+            <svg class="bear-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                <!-- Body -->
+                <circle cx="100" cy="110" r="60" fill="#d4a373" /> <!-- Brown Body -->
+                <!-- Ears -->
+                <circle cx="60" cy="60" r="20" fill="#d4a373" />
+                <circle cx="140" cy="60" r="20" fill="#d4a373" />
+                <circle cx="60" cy="60" r="10" fill="#faedcd" /> <!-- Inner Ear -->
+                <circle cx="140" cy="60" r="10" fill="#faedcd" />
+                <!-- Face -->
+                <circle cx="85" cy="100" r="5" fill="#333" /> <!-- Eye L -->
+                <circle cx="115" cy="100" r="5" fill="#333" /> <!-- Eye R -->
+                <ellipse cx="100" cy="115" rx="12" ry="8" fill="#333" /> <!-- Nose -->
+                <ellipse cx="100" cy="112" rx="10" ry="5" fill="#6d4c41" /> <!-- Nose Highlight -->
+                <!-- Cheeks -->
+                <circle cx="70" cy="115" r="7" fill="#ffb6c1" opacity="0.6" />
+                <circle cx="130" cy="115" r="7" fill="#ffb6c1" opacity="0.6" />
+                <!-- Arms holding heart -->
+                <ellipse cx="70" cy="140" rx="15" ry="25" fill="#d4a373" transform="rotate(-20 70 140)" />
+                <ellipse cx="130" cy="140" rx="15" ry="25" fill="#d4a373" transform="rotate(20 130 140)" />
+                <!-- Heart -->
+                <path d="M100 170 L70 140 A20 20 0 0 1 100 110 A20 20 0 0 1 130 140 Z" fill="#ff4d6d"
+                    transform="scale(1.5) translate(-33 -30)" />
+            </svg>
+        </div>
+
+        <h1 id="question">Will you be my Valentine? 🥺</h1>
+
+        <div class="buttons" id="btnGroup">
+            <button class="btn btn-yes" onclick="handleYes()">YES! ❤️</button>
+            <button class="btn btn-no" id="noBtn" onmouseover="moveButton()" ontouchstart="moveButton()">No 😢</button>
+        </div>
+
+        <div class="success-text" id="successMsg">
+            I KNEW IT! 🥰<br>YAYYYY!!!!
+        </div>
+    </div>
+
+    <script>
+        // Init Floating Hearts
+        function createHearts() {
+            const container = document.getElementById('heartsContainer');
+            const hearts = ['❤️', '💖', '💝', '💕', '💗'];
+
+            for (let i = 0; i < 20; i++) {
+                const heart = document.createElement('div');
+                heart.className = 'bg-heart';
+                heart.innerText = hearts[Math.floor(Math.random() * hearts.length)];
+                heart.style.left = Math.random() * 100 + 'vw';
+                heart.style.animationDuration = (Math.random() * 5 + 5) + 's'; // 5-10s
+                heart.style.animationDelay = (Math.random() * 5) + 's';
+                container.appendChild(heart);
+            }
+        }
+        createHearts();
+
+        // No Button Logic
+        const noBtn = document.getElementById('noBtn');
+        const btnGroup = document.getElementById('btnGroup');
+
+        function moveButton() {
+            const margin = 50; // Larger safety margin
+            const noBtnRect = noBtn.getBoundingClientRect();
+            // Get Yes button position to avoid it
+            const yesBtn = document.querySelector('.btn-yes');
+            const yesBtnRect = yesBtn.getBoundingClientRect();
+
+            // Viewport dimensions
+            const pWidth = window.innerWidth;
+            const pHeight = window.innerHeight;
+
+            // Calculate max positions ensuring button stays fully on screen with margin
+            // We subtract width/height and double margin (one for each side concept)
+            const maxW = pWidth - noBtnRect.width - margin;
+            const maxH = pHeight - noBtnRect.height - margin;
+
+            if (maxW <= 0 || maxH <= 0) return; // Should not happen on normal screens
+
+            let newX, newY;
+            let safe = false;
+            let attempts = 0;
+
+            while (!safe && attempts < 20) {
+                // Random position within safe zone (start at 'margin', go up to 'maxW')
+                newX = margin + Math.random() * (maxW - margin);
+                newY = margin + Math.random() * (maxH - margin);
+
+                // Check collision with Yes button (plus buffering)
+                const pad = 20;
+                const noLeft = newX;
+                const noRight = newX + noBtnRect.width;
+                const noTop = newY;
+                const noBottom = newY + noBtnRect.height;
+
+                const yesLeft = yesBtnRect.left - pad;
+                const yesRight = yesBtnRect.right + pad;
+                const yesTop = yesBtnRect.top - pad;
+                const yesBottom = yesBtnRect.bottom + pad;
+
+                // AABB Collision Check
+                const overlap = !(noRight < yesLeft ||
+                    noLeft > yesRight ||
+                    noBottom < yesTop ||
+                    noTop > yesBottom);
+
+                if (!overlap) {
+                    safe = true;
+                }
+                attempts++;
+            }
+
+            // Fallback if no safe spot found (rare): just use the last generated coordinates
+            noBtn.style.position = 'fixed'; // Ensure it's fixed
+            noBtn.style.left = newX + 'px';
+            noBtn.style.top = newY + 'px';
+            noBtn.classList.add('moving');
+        }
+
+        // Yes Button Logic
+        function handleYes() {
+            const h1 = document.getElementById('question');
+            const visual = document.getElementById('visualContainer');
+            const btns = document.getElementById('btnGroup');
+            const success = document.getElementById('successMsg');
+
+            // Change Text
+            h1.innerHTML = "YAYYYY! 🎉";
+            btns.style.display = 'none';
+            success.style.display = 'block';
+
+            // Change Visual (Happy Bear) - Modify SVG slightly to look happier/dancing
+            // For simplicity, we just animate the existing one faster or replace with text/image
+            // Let's replace the SVG with a "Happy Couple" or big heart URL if available, 
+            // but since we rely on internal SVG, let's just make the bear "dance" wilder
+            const bear = document.querySelector('.bear-svg');
+            bear.style.animation = 'bounce 0.5s infinite ease-in-out';
+
+            // Confetti
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#ff4d6d', '#ffb6c1', '#ffd700', '#ffffff']
+            });
+
+            // More confetti loop
+            const duration = 3000;
+            const end = Date.now() + duration;
+
+            (function frame() {
+                confetti({
+                    particleCount: 5,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0 },
+                    colors: ['#ff4d6d', '#ffafd6']
+                });
+                confetti({
+                    particleCount: 5,
+                    angle: 120,
+                    spread: 55,
+                    origin: { x: 1 },
+                    colors: ['#ff4d6d', '#ffafd6']
+                });
+
+                if (Date.now() < end) {
+                    requestAnimationFrame(frame);
+                }
+            }());
+        }
+    </script>
+</body>
+
+</html>

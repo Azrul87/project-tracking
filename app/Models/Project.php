@@ -5,8 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use App\Models\ProjectFile;
 use App\Models\InsurancePolicy;
+use App\Models\ProjectWorkflowStage;
+use App\Models\ProjectMaterial;
+use App\Models\Material;
 
 class Project extends Model
 {
@@ -46,10 +51,6 @@ class Project extends Model
         'additional_remark',
         'closed_date',
         'status',
-        'invoice_status',
-        'payment_status',
-        'total_invoiced',
-        'total_paid',
         'procurement_status',
         'module',
         'module_quantity',
@@ -59,44 +60,7 @@ class Project extends Model
         'installer',
         'installer_other',
         'installation_date',
-        // EPCC Workflow Stages
-        'client_enquiry_date',
-        'proposal_preparation_date',
-        'proposal_submission_date',
-        'proposal_acceptance_date',
-        'letter_of_award_date',
-        'first_invoice_date',
-        'first_invoice_payment_date',
-        'site_study_date',
-        'nem_application_submission_date',
-        'project_planning_date',
-        'nem_approval_date',
-        'st_license_application_date',
-        'second_invoice_date',
-        'second_invoice_payment_date',
-        'material_procurement_date',
-        'subcon_appointment_date',
-        'material_delivery_date',
-        'site_mobilization_date',
-        'st_license_approval_date',
-        'system_testing_date',
-        'system_commissioning_date',
-        'nem_meter_change_date',
-        'last_invoice_date',
-        'last_invoice_payment_date',
-        'system_energize_date',
-        'nemcd_obtained_date',
-        'system_training_date',
-        'project_handover_to_client_date',
-        'project_closure_date',
-        'handover_to_om_date',
-        // O&M Workflow Stages
-        'om_site_study_date',
-        'om_schedule_prepared_date',
-        'om_start_date',
-        'om_end_date',
-        'workflow_stage',
-        'om_status',
+        'roof_type',
     ];
 
     protected $casts = [
@@ -106,43 +70,31 @@ class Project extends Model
         'closed_date' => 'date',
         'site_survey_date' => 'date',
         'installation_date' => 'date',
-        // EPCC Workflow Dates
-        'client_enquiry_date' => 'date',
-        'proposal_preparation_date' => 'date',
-        'proposal_submission_date' => 'date',
-        'proposal_acceptance_date' => 'date',
-        'letter_of_award_date' => 'date',
-        'first_invoice_date' => 'date',
-        'first_invoice_payment_date' => 'date',
-        'site_study_date' => 'date',
-        'nem_application_submission_date' => 'date',
-        'project_planning_date' => 'date',
-        'nem_approval_date' => 'date',
-        'st_license_application_date' => 'date',
-        'second_invoice_date' => 'date',
-        'second_invoice_payment_date' => 'date',
-        'material_procurement_date' => 'date',
-        'subcon_appointment_date' => 'date',
-        'material_delivery_date' => 'date',
-        'site_mobilization_date' => 'date',
-        'st_license_approval_date' => 'date',
-        'system_testing_date' => 'date',
-        'system_commissioning_date' => 'date',
-        'nem_meter_change_date' => 'date',
-        'last_invoice_date' => 'date',
-        'last_invoice_payment_date' => 'date',
-        'system_energize_date' => 'date',
-        'nemcd_obtained_date' => 'date',
-        'system_training_date' => 'date',
-        'project_handover_to_client_date' => 'date',
-        'project_closure_date' => 'date',
-        'handover_to_om_date' => 'date',
-        // O&M Workflow Dates
-        'om_site_study_date' => 'date',
-        'om_schedule_prepared_date' => 'date',
-        'om_start_date' => 'date',
-        'om_end_date' => 'date',
     ];
+
+    /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Automatically create workflow stage record when a project is created
+        static::created(function ($project) {
+            $workflowData = [
+                'project_id' => $project->project_id,
+                'workflow_stage' => self::WORKFLOW_CLIENT_ENQUIRY,
+            ];
+            
+            // Apply any pending workflow updates from __set() method
+            if (isset($project->pendingWorkflowUpdates)) {
+                $workflowData = array_merge($workflowData, $project->pendingWorkflowUpdates);
+                unset($project->pendingWorkflowUpdates);
+            }
+            
+            ProjectWorkflowStage::create($workflowData);
+        });
+    }
     
     // Workflow Stage Constants (based on Procedure ECN)
     const WORKFLOW_CLIENT_ENQUIRY = 'Client Enquiry';
@@ -222,11 +174,58 @@ class Project extends Model
     }
 
     /**
-     * Project items (materials) for this project.
+     * Items (materials) for this project.
      */
-    public function projectItems(): HasMany
+    public function items(): HasMany
     {
-        return $this->hasMany(ProjectItem::class, 'project_id', 'project_id');
+        return $this->hasMany(Item::class, 'project_id', 'project_id');
+    }
+
+    /**
+     * Workflow stages for this project.
+     */
+    public function workflowStage(): HasOne
+    {
+        return $this->hasOne(ProjectWorkflowStage::class, 'project_id', 'project_id');
+    }
+
+    /**
+     * Materials for this project (normalized many-to-many relationship).
+     */
+    public function materials(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Material::class,           // Related model
+            'project_materials',       // Pivot table
+            'project_id',              // Foreign key on pivot table for this model
+            'material_id',             // Foreign key on pivot table for related model
+            'project_id'               // Parent key on this model (custom primary key)
+        )
+        ->withPivot('quantity', 'remark')
+        ->withTimestamps();
+    }
+
+    /**
+     * Get project materials pivot records directly.
+     */
+    public function projectMaterials(): HasMany
+    {
+        return $this->hasMany(ProjectMaterial::class, 'project_id', 'project_id');
+    }
+
+    /**
+     * Legacy accessor for backward compatibility.
+     * Returns the materials relationship with eager loading.
+     */
+    public function getProjectMaterialAttribute()
+    {
+        // For backward compatibility, return a wrapper that behaves like the old single record
+        // but actually contains the normalized data
+        if (!$this->relationLoaded('materials')) {
+            $this->load('materials');
+        }
+        
+        return $this->materials;
     }
 
     /**
@@ -283,6 +282,258 @@ class Project extends Model
         }
 
         return $prefix . $year . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Get or create workflow stage record for this project.
+     */
+    public function getOrCreateWorkflowStage(): ProjectWorkflowStage
+    {
+        // First, try to get from loaded relationship
+        if ($this->relationLoaded('workflowStage')) {
+            $workflow = $this->getRelation('workflowStage');
+            if ($workflow instanceof ProjectWorkflowStage) {
+                return $workflow;
+            }
+        }
+        
+        // Try to get existing workflow stage from database
+        $workflow = ProjectWorkflowStage::where('project_id', $this->project_id)->first();
+        
+        if ($workflow instanceof ProjectWorkflowStage) {
+            // Refresh the relationship cache
+            $this->setRelation('workflowStage', $workflow);
+            return $workflow;
+        }
+        
+        // Create new workflow stage if it doesn't exist
+        $workflow = ProjectWorkflowStage::create([
+            'project_id' => $this->project_id,
+            'workflow_stage' => self::WORKFLOW_CLIENT_ENQUIRY,
+        ]);
+        
+        // Cache the relationship
+        $this->setRelation('workflowStage', $workflow);
+        
+        return $workflow;
+    }
+
+    /**
+     * Calculate total invoiced amount from payments table.
+     */
+    public function getTotalInvoicedAttribute(): float
+    {
+        return (float) $this->payments()->sum('invoice_amount');
+    }
+
+    /**
+     * Calculate total paid amount from payments table.
+     */
+    public function getTotalPaidAttribute(): float
+    {
+        return (float) $this->payments()->sum('payment_amount');
+    }
+
+    /**
+     * Calculate payment status based on payments.
+     */
+    public function getPaymentStatusAttribute(): string
+    {
+        $payments = $this->payments;
+        $payCount = $payments->whereNotNull('payment_date')->count();
+        
+        if ($payCount === 0) {
+            return 'Pending 1st Payment';
+        }
+        
+        $totalPaid = $this->total_paid;
+        $contractValue = ($this->project_value_rm ?? 0) + ($this->vo_rm ?? 0);
+        
+        if ($totalPaid >= $contractValue) {
+            return 'Fully Paid';
+        }
+        
+        // Check for overdue payments
+        $today = now()->startOfDay();
+        $invoices = $payments->whereNotNull('invoice_date')->sortBy('invoice_date');
+        $cumulativeInvoice = 0;
+        $cumulativePaid = 0;
+        
+        foreach ($invoices as $payment) {
+            $cumulativeInvoice += (float) ($payment->invoice_amount ?? 0);
+            $cumulativePaid += (float) ($payment->payment_amount ?? 0);
+            
+            if ($payment->invoice_date && $payment->invoice_date->lt($today) && $cumulativePaid < $cumulativeInvoice) {
+                return 'Overdue';
+            }
+        }
+        
+        return "$payCount Payment(s) Received";
+    }
+
+    /**
+     * Calculate invoice status based on payments.
+     */
+    public function getInvoiceStatusAttribute(): string
+    {
+        $invoices = $this->payments()->whereNotNull('invoice_date')->get();
+        $invoiceCount = $invoices->count();
+        
+        if ($invoiceCount === 0) {
+            return 'No Invoices';
+        }
+        
+        $totalInvoiced = $this->total_invoiced;
+        $totalPaid = $this->total_paid;
+        
+        if ($totalPaid >= $totalInvoiced) {
+            return 'All Invoiced & Paid';
+        }
+        
+        return "$invoiceCount Invoice(s) Issued";
+    }
+
+    /**
+     * Get workflow stage name (for backward compatibility).
+     */
+    public function getWorkflowStageAttribute(): ?string
+    {
+        try {
+            $workflow = $this->relationLoaded('workflowStage') 
+                ? $this->getRelation('workflowStage')
+                : $this->workflowStage;
+            
+            if ($workflow instanceof ProjectWorkflowStage) {
+                return $workflow->workflow_stage ?? self::WORKFLOW_CLIENT_ENQUIRY;
+            }
+        } catch (\Exception $e) {
+            // If anything goes wrong, return default
+        }
+        
+        return self::WORKFLOW_CLIENT_ENQUIRY;
+    }
+
+    /**
+     * Get O&M status (for backward compatibility).
+     */
+    public function getOmStatusAttribute(): ?string
+    {
+        try {
+            $workflow = $this->relationLoaded('workflowStage') 
+                ? $this->getRelation('workflowStage')
+                : $this->workflowStage;
+            
+            if ($workflow instanceof ProjectWorkflowStage) {
+                return $workflow->om_status ?? null;
+            }
+        } catch (\Exception $e) {
+            // If anything goes wrong, return null
+        }
+        
+        return null;
+    }
+
+    /**
+     * Magic method to access workflow date fields through relationship.
+     * This provides backward compatibility for code that accesses $project->client_enquiry_date, etc.
+     */
+    public function __get($key)
+    {
+        // Check if it's a workflow date field
+        $workflowDateFields = [
+            'client_enquiry_date', 'proposal_preparation_date', 'proposal_submission_date',
+            'proposal_acceptance_date', 'letter_of_award_date', 'first_invoice_date',
+            'first_invoice_payment_date', 'site_study_date', 'nem_application_submission_date',
+            'project_planning_date', 'nem_approval_date', 'st_license_application_date',
+            'second_invoice_date', 'second_invoice_payment_date', 'material_procurement_date',
+            'subcon_appointment_date', 'material_delivery_date', 'site_mobilization_date',
+            'st_license_approval_date', 'system_testing_date', 'system_commissioning_date',
+            'nem_meter_change_date', 'last_invoice_date', 'last_invoice_payment_date',
+            'system_energize_date', 'nemcd_obtained_date', 'system_training_date',
+            'project_handover_to_client_date', 'project_closure_date', 'handover_to_om_date',
+            'om_site_study_date', 'om_schedule_prepared_date', 'om_start_date', 'om_end_date',
+        ];
+        
+        if (in_array($key, $workflowDateFields)) {
+            try {
+                // Check if we have a project_id (even if not saved yet)
+                if (!empty($this->project_id)) {
+                    // Try to get from loaded relationship first
+                    if ($this->relationLoaded('workflowStage')) {
+                        $workflow = $this->getRelation('workflowStage');
+                        if ($workflow instanceof ProjectWorkflowStage) {
+                            return $workflow->$key ?? null;
+                        }
+                    }
+                    
+                    // Always get fresh data from database to ensure we have the latest updates
+                    $workflow = ProjectWorkflowStage::where('project_id', $this->project_id)->first();
+                    if ($workflow instanceof ProjectWorkflowStage) {
+                        // Update the cached relationship with fresh data
+                        $this->setRelation('workflowStage', $workflow);
+                        // Access the attribute - ProjectWorkflowStage model will handle date casting
+                        return $workflow->$key ?? null;
+                    }
+                }
+            } catch (\Exception $e) {
+                // If anything goes wrong, just return null
+                \Log::error('Error accessing workflow date field', [
+                    'key' => $key,
+                    'project_id' => $this->project_id ?? 'unknown',
+                    'error' => $e->getMessage()
+                ]);
+                return null;
+            }
+            
+            return null;
+        }
+        
+        return parent::__get($key);
+    }
+
+    /**
+     * Magic method to set workflow date fields through relationship.
+     */
+    public function __set($key, $value)
+    {
+        $workflowDateFields = [
+            'client_enquiry_date', 'proposal_preparation_date', 'proposal_submission_date',
+            'proposal_acceptance_date', 'letter_of_award_date', 'first_invoice_date',
+            'first_invoice_payment_date', 'site_study_date', 'nem_application_submission_date',
+            'project_planning_date', 'nem_approval_date', 'st_license_application_date',
+            'second_invoice_date', 'second_invoice_payment_date', 'material_procurement_date',
+            'subcon_appointment_date', 'material_delivery_date', 'site_mobilization_date',
+            'st_license_approval_date', 'system_testing_date', 'system_commissioning_date',
+            'nem_meter_change_date', 'last_invoice_date', 'last_invoice_payment_date',
+            'system_energize_date', 'nemcd_obtained_date', 'system_training_date',
+            'project_handover_to_client_date', 'project_closure_date', 'handover_to_om_date',
+            'om_site_study_date', 'om_schedule_prepared_date', 'om_start_date', 'om_end_date',
+            'workflow_stage', 'om_status',
+        ];
+        
+        if (in_array($key, $workflowDateFields)) {
+            // If project doesn't exist yet, store the value to be saved later
+            if (!$this->exists) {
+                // Store in a temporary array to be processed after project is saved
+                if (!isset($this->pendingWorkflowUpdates)) {
+                    $this->pendingWorkflowUpdates = [];
+                }
+                $this->pendingWorkflowUpdates[$key] = $value;
+                return;
+            }
+            
+            // Project exists, update workflow stage directly
+            ProjectWorkflowStage::updateOrCreate(
+                ['project_id' => $this->project_id],
+                [$key => $value]
+            );
+            
+            // Clear the relationship cache
+            $this->unsetRelation('workflowStage');
+            return;
+        }
+        
+        parent::__set($key, $value);
     }
 }
 

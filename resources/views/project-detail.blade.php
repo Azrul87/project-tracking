@@ -129,32 +129,32 @@
             <div class="flex justify-between items-start">
                 <div class="flex-1">
                     <div class="flex items-center space-x-4 mb-4">
-                        <h1 class="text-2xl font-bold text-gray-900">{{ $project['project_no'] ?? '#PRJ-001' }}</h1>
-                        <span class="status-badge status-{{ $project['status'] ?? 'active' }}">
-                            {{ ucfirst(str_replace('-', ' ', $project['status'] ?? 'active')) }}
+                        <h1 class="text-2xl font-bold text-gray-900">{{ $project->project_id }}</h1>
+                        <span class="status-badge status-{{ strtolower(str_replace(' ', '-', $project->status ?? 'active')) }}">
+                            {{ $project->status ?? 'Active' }}
                         </span>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-500">Client Name</label>
-                            <p class="text-lg font-semibold text-gray-900">{{ $project['client'] ?? 'ABC Corporation' }}</p>
+                            <p class="text-lg font-semibold text-gray-900">{{ $project->client->client_name ?? 'N/A' }}</p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-500">Location</label>
-                            <p class="text-lg font-semibold text-gray-900">{{ $project['location'] ?? 'New York, NY' }}</p>
+                            <p class="text-lg font-semibold text-gray-900">{{ $project->location ?? 'N/A' }}</p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-500">Category</label>
-                            <p class="text-lg font-semibold text-gray-900">{{ ucfirst($project['category'] ?? 'commercial') }}</p>
+                            <p class="text-lg font-semibold text-gray-900">{{ ucfirst($project->category ?? 'N/A') }}</p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-500">Installation Date</label>
-                            <p class="text-lg font-semibold text-gray-900">{{ $project['installation_date'] ?? '2024-01-15' }}</p>
+                            <p class="text-lg font-semibold text-gray-900">{{ $project->installation_date ? \Carbon\Carbon::parse($project->installation_date)->format('Y-m-d') : 'N/A' }}</p>
                         </div>
                     </div>
                 </div>
                 <div class="ml-6">
-                    <a href="{{ route('projects.edit', $project['id'] ?? 1) }}" class="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 transition-colors">
+                    <a href="{{ route('projects.edit', $project->project_id) }}" class="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center space-x-2 transition-colors">
                         <i class="ri-edit-line"></i>
                         <span>Edit Project</span>
                     </a>
@@ -202,23 +202,23 @@
                             <div class="space-y-3">
                                 <div class="flex justify-between">
                                     <span class="text-gray-600">Company:</span>
-                                    <span class="font-medium">{{ $project['client'] ?? 'ABC Corporation' }}</span>
+                                    <span class="font-medium">{{ $project->client->client_name ?? 'N/A' }}</span>
                                 </div>
                                 <div class="flex justify-between">
                                     <span class="text-gray-600">Contact Person:</span>
-                                    <span class="font-medium">John Smith</span>
+                                    <span class="font-medium">{{ $project->client->contact_person ?? 'N/A' }}</span>
                                 </div>
                                 <div class="flex justify-between">
                                     <span class="text-gray-600">Email:</span>
-                                    <span class="font-medium">john.smith@abccorp.com</span>
+                                    <span class="font-medium">{{ $project->client->email ?? 'N/A' }}</span>
                                 </div>
                                 <div class="flex justify-between">
                                     <span class="text-gray-600">Phone:</span>
-                                    <span class="font-medium">+1 (555) 123-4567</span>
+                                    <span class="font-medium">{{ $project->client->phone ?? 'N/A' }}</span>
                                 </div>
                                 <div class="flex justify-between">
                                     <span class="text-gray-600">Address:</span>
-                                    <span class="font-medium">123 Business St, {{ $project['location'] ?? 'New York, NY' }}</span>
+                                    <span class="font-medium">{{ $project->location ?? 'N/A' }}</span>
                                 </div>
                             </div>
                         </div>
@@ -229,27 +229,27 @@
                             <div class="space-y-3">
                                 <div class="flex justify-between">
                                     <span class="text-gray-600">System Capacity:</span>
-                                    <span class="font-medium">50 kW</span>
+                                    <span class="font-medium">{{ $project->pv_system_capacity_kwp ? $project->pv_system_capacity_kwp . ' kWp' : 'N/A' }}</span>
                                 </div>
                                 <div class="flex justify-between">
                                     <span class="text-gray-600">Modules:</span>
-                                    <span class="font-medium">125 x 400W Panels</span>
+                                    <span class="font-medium">{{ $project->module_quantity ? $project->module_quantity . ' x ' : '' }}{{ $project->module ?? 'N/A' }}</span>
                                 </div>
                                 <div class="flex justify-between">
                                     <span class="text-gray-600">Inverter:</span>
-                                    <span class="font-medium">SMA Sunny Boy 5000</span>
+                                    <span class="font-medium">{{ $project->inverter ?? 'N/A' }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Roof Type:</span>
+                                    <span class="font-medium">{{ $project->roof_type ?? 'N/A' }}</span>
                                 </div>
                                 <div class="flex justify-between">
                                     <span class="text-gray-600">Sales PIC:</span>
-                                    <span class="font-medium">{{ $project['sales_pic'] ?? 'Sarah Wilson' }}</span>
+                                    <span class="font-medium">{{ $project->salesPic->name ?? 'N/A' }}</span>
                                 </div>
                                 <div class="flex justify-between">
                                     <span class="text-gray-600">Start Date:</span>
-                                    <span class="font-medium">2024-01-01</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Expected Completion:</span>
-                                    <span class="font-medium">2024-03-15</span>
+                                    <span class="font-medium">{{ $project->created_at->format('Y-m-d') }}</span>
                                 </div>
                             </div>
                         </div>
@@ -366,57 +366,74 @@
                 <!-- Materials Tab -->
                 <div id="materials" class="tab-content">
                     <h3 class="text-lg font-semibold text-gray-900 mb-6">Materials & Procurement</h3>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Material</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty Required</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty Delivered</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Solar Panels 400W</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">125</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">125</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="status-badge payment-paid">Delivered</span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">SolarTech Inc.</td>
-                                </tr>
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Inverter SMA 5000</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">1</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">1</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="status-badge payment-paid">Delivered</span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">InverterPro Ltd.</td>
-                                </tr>
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Mounting Rails</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">50</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">45</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="status-badge payment-pending">Partial</span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Mounting Systems Co.</td>
-                                </tr>
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Cables & Wiring</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">500m</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">0</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="status-badge payment-overdue">Pending</span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Cable Solutions Inc.</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    
+                    @if($project->projectMaterial)
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Material / Component</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    @php
+                                        $materials = [
+                                            'Klip Lok Clamp' => 'klip_lok_clamp',
+                                            'L-Foot' => 'l_foot',
+                                            'Tile Hook' => 'tile_hook',
+                                            'Rail 2.6m' => 'rail_2_6m',
+                                            'Rail 5.3m' => 'rail_5_3m',
+                                            'Rail 4.7m' => 'rail_4_7m',
+                                            'Rail 3.6m' => 'rail_3_6m',
+                                            'Splicer' => 'splicer',
+                                            'Mid Clamp' => 'mid_clamp',
+                                            'End Clamp' => 'end_clamp',
+                                            'Grounding Clip' => 'grounding_clip',
+                                            'Grounding Lug' => 'grounding_lug',
+                                            'Dongle' => 'dongle',
+                                            'Precast Concrete Block' => 'precast_concrete_block',
+                                            'DC Cable (4mm²)' => 'dc_cable_4mmsq',
+                                            'DC Cable (6mm²)' => 'dc_cable_6mmsq',
+                                            'PV Connector (Male)' => 'pv_connector_male',
+                                            'PV Connector (Female)' => 'pv_connector_female',
+                                            'Isolator Switch (3P)' => 'isolator_switch_3p',
+                                            'kWh Meter (1-Phase)' => 'kwh_meter_1phase',
+                                            'kWh Meter (3-Phase)' => 'kwh_meter_3phase',
+                                            'PV AC DB' => 'pv_ac_db',
+                                            'Data Logger' => 'data_logger',
+                                            'Weather Station' => 'weather_station',
+                                            'BESS' => 'bess',
+                                            'EV Charger' => 'ev_charger',
+                                            'Optimiser' => 'optimiser',
+                                        ];
+                                    @endphp
+
+                                    @foreach($materials as $label => $field)
+                                        @if($project->projectMaterial->$field > 0)
+                                            <tr class="hover:bg-gray-50">
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $label }}</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $project->projectMaterial->$field }}</td>
+                                            </tr>
+                                        @endif
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+
+                        @if($project->projectMaterial->remark)
+                            <div class="mt-6 bg-yellow-50 p-4 rounded-md border border-yellow-200">
+                                <h4 class="text-sm font-medium text-yellow-800">Remarks</h4>
+                                <p class="mt-1 text-sm text-yellow-700">{{ $project->projectMaterial->remark }}</p>
+                            </div>
+                        @endif
+                    @else
+                        <div class="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                            <i class="ri-file-list-3-line text-4xl text-gray-400 mb-2"></i>
+                            <p class="text-gray-500 font-medium">No material list data imported for this project.</p>
+                            <p class="text-sm text-gray-400 mt-1">Import a Material List Excel file to see data here.</p>
+                        </div>
+                    @endif
                 </div>
 
                 <!-- Insurance Tab -->

@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Management Tracking System Poster</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        /* Previous styles remain */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Poster Container - 1m x 1.5m aspect ratio (2:3) */
+        .poster {
+            width: 1000mm;
+            height: 1500mm;
+            background: white;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+            /* Zoom for viewing */
+            transform: scale(0.15);
+            transform-origin: top center;
+            padding: 40mm;
+            display: flex;
+            flex-direction: column;
+            color: #1f2937;
+            margin-bottom: -1200mm;
+            /* Compensate for scale causing whitespace */
+        }
+
+        /* Controls for the user */
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            background-color: #2563eb;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn:hover {
+            background-color: #1d4ed8;
+        }
+
+        /* ... typography and other styles ... */
+        h1.main-title {
+            font-size: 110px;
+            line-height: 1.2;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #1e3a8a;
+            /* Dark Blue */
+            margin-bottom: 20px;
+        }
+
+        .author-section {
+            font-size: 60px;
+            color: #4b5563;
+            margin-bottom: 60px;
+            font-weight: 600;
+        }
+
+        /* Headings: Consistent */
+        h2.section-title {
+            font-size: 70px;
+            font-weight: 700;
+            color: #1e3a8a;
+            border-bottom: 8px solid #3b82f6;
+            /* Blue border */
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+            margin-top: 20px;
+            text-transform: uppercase;
+        }
+
+        /* Body text: > 1cm (approx 38px) */
+        p,
+        li {
+            font-size: 42px;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            text-align: justify;
+        }
+
+        ul {
+            list-style-position: inside;
+            padding-left: 20px;
+        }
+
+        .columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80mm;
+            flex-grow: 1;
+        }
+
+        .card {
+            background: #f8fafc;
+            border: 4px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 60px;
+        }
+
+        .highlight-box {
+            background: #eff6ff;
+            border-left: 15px solid #3b82f6;
+            padding: 40px;
+            margin: 40px 0;
+            font-style: italic;
+        }
+
+        .chart-placeholder {
+            width: 100%;
+            background: #f8fafc;
+            border: 4px solid #cbd5e1;
+            border-radius: 20px;
+            margin-bottom: 40px;
+            position: relative;
+            overflow: hidden;
+            padding: 40px;
+        }
+
+        /* Mockup Styles */
+        .mockup-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+
+        .mockup-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .mockup-stat-val {
+            font-size: 36px;
+            font-weight: 800;
+            color: #1e3a8a;
+        }
+
+        .mockup-stat-label {
+            font-size: 18px;
+            color: #64748b;
+        }
+
+        /* Annotation Styles */
+        .annotation {
+            position: absolute;
+            background: #ef4444;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 24px;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
+            z-index: 10;
+            border: 3px solid white;
+        }
+
+        .annotation::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: #ef4444;
+            transform: rotate(45deg);
+            z-index: -1;
+        }
+
+        .annotation-line {
+            position: absolute;
+            border: 3px dashed #ef4444;
+            z-index: 5;
+        }
+
+        .logo {
+            height: 150mm;
+            width: auto;
+            object-fit: contain;
+            margin-bottom: 20px;
+        }
+
+        @media print {
+            .controls {
+                display: none;
+            }
+
+            body {
+                padding: 0;
+                display: block;
+                background: white;
+            }
+
+            .poster {
+                transform: none;
+                /* Reset zoom for print */
+                margin-bottom: 0;
+                width: 100%;
+                /* Fit to page if needed, or keeping explicit dimensions */
+                height: auto;
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="controls">
+        <button class="btn" onclick="window.print()">Print to PDF</button>
+        <!-- Note: html2canvas might struggle with this huge size, but we'll try -->
+        <button class="btn" onclick="saveAsImage()">Save as Image</button>
+    </div>
+
+    <div class="poster" id="posterContent">
+        <!-- Header Section -->
+        <header class="text-center border-b-8 border-blue-900 pb-12 mb-16">
+            <div class="flex justify-between items-center mb-8 px-12">
+                <img src="images/logo ecn.png" alt="EC Newenergie Logo" class="logo">
+                <!-- Placeholder for Uni Logo if any, strictly using what we have -->
+                <div style="width: 150mm;"></div>
+            </div>
+            <h1 class="main-title">Project Management Tracking System<br>for EC Newenergie</h1>
+            <div class="author-section">
+                <p style="text-align: center; margin: 0;"><strong>Muhammad Azrul</strong></p>
+                <p style="text-align: center; font-size: 45px; margin: 0; color: #6b7280;">EC Newenergie</p>
+            </div>
+        </header>
+
+        <!-- Main Content Columns -->
+        <div class="columns">
+            <!-- Left Column -->
+            <div class="column">
+
+                <section>
+                    <h2 class="section-title">1. Introduction</h2>
+                    <p>The solar energy market is expanding rapidly, with solar PV expected to remain at the forefront
+                        of renewable energy solutions. However, many companies, including EC Newenergie, still rely on
+                        manual tracking methods such as spreadsheets and phone calls to monitor project progress. This
+                        approach becomes increasingly inefficient as the number of simultaneous projects grows.</p>
+                </section>
+
+                <section>
+                    <h2 class="section-title">2. Problem Statement</h2>
+                    <div class="card">
+                        <p>Based on a preliminary interview with stakeholder Miss Aziah Binti Abdul Rahim (Assistant
+                            Project Manager) on 5 April 2025, the following issues were identified:</p>
+                        <ul class="list-disc">
+                            <li><strong>Absence of Centralized Tracking:</strong> Project managers must rely on manual
+                                updates via calls or emails, which is time-consuming and prone to miscommunication.</li>
+                            <li><strong>Delayed Decision Making:</strong> Without real-time updates, emerging issues
+                                like installation delays, material shortages, or manpower lack are not addressed
+                                promptly (Jamil et al., 2021).</li>
+                            <li><strong>Customer Dissatisfaction:</strong> Customers are often left uninformed about
+                                their installation status, leading to frustration and loss of trust (Serrador & Pinto,
+                                2015).</li>
+                            <li><strong>Risk of Penalties:</strong> Manual processes increase the likelihood of missing
+                                critical deadlines and overlooking essential tasks.</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section>
+                    <h2 class="section-title">3. Objectives</h2>
+                    <div class="highlight-box">
+                        <ul class="list-decimal pl-12 font-bold text-blue-900">
+                            <li>To gather the system requirements for a project management tracking system with
+                                dashboard capabilities for EC Newenergie.</li>
+                            <li>To design a project management tracking system that includes a dashboard for monitoring
+                                and project overview.</li>
+                            <li>To develop said tracking system for EC Newenergie to streamline operations.</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section>
+                    <h2 class="section-title">4. Research Method</h2>
+                    <p>The project follows the <strong>Agile Software Development Life Cycle (SDLC)</strong> to ensure
+                        flexibility and continuous improvement.</p>
+                    <ul class="list-disc">
+                        <li><strong>Requirement Gathering:</strong> Interviews with stakeholders to identify pain
+                            points.</li>
+                        <li><strong>System Design:</strong> UML modeling and UI/UX prototyping.</li>
+                        <li><strong>Development:</strong>
+                            <br>Backend: <strong>Laravel (PHP)</strong>
+                            <br>Database: <strong>MySQL</strong>
+                            <br>Frontend: <strong>Blade Templates & Tailwind CSS</strong>
+                        </li>
+                    </ul>
+                </section>
+
+            </div>
+
+            <!-- Right Column -->
+            <div class="column">
+
+                <section>
+                    <h2 class="section-title">5. Results & Discussion</h2>
+                    <p>The developed system features a comprehensive centralized dashboard that provides real-time
+                        insights into project status.</p>
+
+                    <!-- Visual Representation of Dashboard -->
+                    <div class="card bg-white border-blue-200">
+                        <h3 style="font-size: 50px; font-weight: 700; color: #1e40af; margin-bottom: 20px;">System
+                            Dashboard Features</h3>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-bottom: 40px;">
+                            <div style="background: #eff6ff; padding: 30px; border-radius: 15px; text-align: center;">
+                                <div style="font-size: 80px; font-weight: 800; color: #2563eb;">100%</div>
+                                <div style="font-size: 40px; color: #1e3a8a;">Digital Tracking</div>
+                            </div>
+                            <div style="background: #f0fdf4; padding: 30px; border-radius: 15px; text-align: center;">
+                                <div style="font-size: 80px; font-weight: 800; color: #16a34a;">Real-time</div>
+                                <div style="font-size: 40px; color: #14532d;">Status Updates</div>
+                            </div>
+                        </div>
+
+                        <div class="chart-placeholder">
+                            <!-- Dashboard Header Mockup -->
+                            <div class="mockup-header">
+                                <div>
+                                    <div style="font-size: 32px; font-weight: 800; color: #1e293b;">Project Dashboard
+                                    </div>
+                                    <div style="font-size: 20px; color: #64748b;">Overview of 12 active solar
+                                        installations</div>
+                                </div>
+                                <div style="display: flex; gap: 20px;">
+                                    <div
+                                        style="background: white; padding: 10px 20px; border-radius: 8px; border: 2px solid #e2e8f0; display: flex; align-items: center; gap: 10px;">
+                                        <i class="ri-calendar-line"></i> <span style="font-size: 20px;">Oct 2025</span>
+                                    </div>
+                                    <div
+                                        style="background: #2563eb; color: white; padding: 10px 20px; border-radius: 8px; display: flex; align-items: center; gap: 10px;">
+                                        <i class="ri-add-line"></i> <span style="font-size: 20px;">New Project</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Dashboard Stats Grid -->
+                            <div
+                                style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px;">
+                                <div class="mockup-card" style="border-left: 8px solid #3b82f6;">
+                                    <div class="mockup-stat-label">Total Projects</div>
+                                    <div class="mockup-stat-val">42</div>
+                                    <div style="font-size: 16px; color: #16a34a; margin-top: 5px;">▲ 12% vs last month
+                                    </div>
+                                </div>
+                                <div class="mockup-card" style="border-left: 8px solid #10b981;">
+                                    <div class="mockup-stat-label">Contract Value</div>
+                                    <div class="mockup-stat-val">RM 4.2M</div>
+                                    <div style="font-size: 16px; color: #64748b; margin-top: 5px;">Across all phases
+                                    </div>
+                                </div>
+                                <div class="mockup-card" style="border-left: 8px solid #f59e0b;">
+                                    <div class="mockup-stat-label">Pending Actions</div>
+                                    <div class="mockup-stat-val">8</div>
+                                    <div style="font-size: 16px; color: #ef4444; margin-top: 5px;">Requires attention
+                                    </div>
+                                </div>
+                                <div class="mockup-card" style="border-left: 8px solid #8b5cf6;">
+                                    <div class="mockup-stat-label">System Health</div>
+                                    <div class="mockup-stat-val">94%</div>
+                                    <div style="font-size: 16px; color: #64748b; margin-top: 5px;">Optimal Performance
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Complex Graph Section -->
+                            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px;">
+                                <div class="mockup-card">
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                                        <div style="font-size: 24px; font-weight: 700;">Financial Velocity & Project
+                                            Completion</div>
+                                    </div>
+                                    <!-- A visual approximation of a complex chart -->
+                                    <div
+                                        style="height: 200px; display: flex; align-items: flex-end; gap: 15px; padding-bottom: 10px; border-bottom: 2px solid #e2e8f0;">
+                                        <div
+                                            style="width: 10%; height: 30%; background: #93c5fd; border-radius: 4px 4px 0 0;">
+                                        </div>
+                                        <div
+                                            style="width: 10%; height: 45%; background: #93c5fd; border-radius: 4px 4px 0 0;">
+                                        </div>
+                                        <div
+                                            style="width: 10%; height: 60%; background: #3b82f6; border-radius: 4px 4px 0 0;">
+                                        </div>
+                                        <div
+                                            style="width: 10%; height: 50%; background: #93c5fd; border-radius: 4px 4px 0 0;">
+                                        </div>
+                                        <div
+                                            style="width: 10%; height: 75%; background: #3b82f6; border-radius: 4px 4px 0 0;">
+                                        </div>
+                                        <div
+                                            style="width: 10%; height: 85%; background: #3b82f6; border-radius: 4px 4px 0 0;">
+                                        </div>
+                                        <div
+                                            style="width: 10%; height: 65%; background: #93c5fd; border-radius: 4px 4px 0 0;">
+                                        </div>
+                                        <div
+                                            style="width: 10%; height: 95%; background: #1d4ed8; border-radius: 4px 4px 0 0;">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mockup-card">
+                                    <div style="font-size: 24px; font-weight: 700; margin-bottom: 20px;">Task
+                                        Distribution</div>
+                                    <div
+                                        style="height: 200px; position: relative; display: flex; align-items: center; justify-content: center;">
+                                        <div
+                                            style="width: 160px; height: 160px; border-radius: 50%; border: 30px solid #cbd5e1; border-top-color: #3b82f6; border-right-color: #10b981; border-bottom-color: #f59e0b; transform: rotate(45deg);">
+                                        </div>
+                                        <div style="position: absolute; text-align: center;">
+                                            <div style="font-size: 32px; font-weight: 800;">128</div>
+                                            <div style="font-size: 14px; color: #64748b;">Active Tasks</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Annotations explaining complexity -->
+                            <div class="annotation" style="top: 20px; left: 20px; width: 350px;">
+                                Data Aggregation Hub
+                                <div style="font-size: 18px; font-weight: normal; margin-top: 5px;">Consolidates 5+ data
+                                    sources (Sales, Logistics, Finance) into a single view.</div>
+                            </div>
+
+                            <div class="annotation" style="bottom: 150px; left: 100px; width: 400px;">
+                                Financial Synchronization
+                                <div style="font-size: 18px; font-weight: normal; margin-top: 5px;">Algorithms correlate
+                                    Payment Milestones with Physical Installation Progress.</div>
+                            </div>
+
+                            <div class="annotation" style="top: 180px; right: 40px; width: 300px; background: #2563eb;">
+                                Predictive Analytics
+                                <div style="font-size: 18px; font-weight: normal; margin-top: 5px;">Identifies "At Risk"
+                                    projects before they miss deadlines.</div>
+                            </div>
+                        </div>
+
+                        <p><strong>Advanced Computational Logic:</strong></p>
+                        <ul class="list-disc">
+                            <li><strong>Multi-Factor Weighted Progress:</strong> Unlike simple checklist systems, our
+                                "Overall Progress" is a computed metric weighting <strong>Physical Workflow
+                                    (40%)</strong> against <strong>Financial Milestones (60%)</strong>, giving
+                                stakeholders a truer picture of project health.</li>
+                            <li><strong>Automated Critical Path Analysis:</strong> The system automatically calculates
+                                "Delayed" or "At Risk" statuses by comparing real-time progress against a standard
+                                196-day installation baseline.</li>
+                            <li><strong>Dynamic Financial Integration:</strong> Real-time syncing ensures that displayed
+                                contract values and outstanding balances reflect the latest approved Variation Orders
+                                (VOs) and processed payments.</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section>
+                    <h2 class="section-title">6. Conclusion</h2>
+                    <p>The Project Management Tracking System successfully addresses the critical issues faced by EC
+                        Newenergie.</p>
+                    <ul class="list-disc">
+                        <li>It eliminates the reliance on manual spreadsheets and phone calls.</li>
+                        <li>It provides a centralized platform for real-time monitoring, reducing the risk of delays.
+                        </li>
+                        <li>It enhances professional image and customer trust by ensuring transparent and timely
+                            progress updates.</li>
+                    </ul>
+                    <p>Future work will focus on integrating mobile push notifications for on-site install teams.</p>
+                </section>
+
+                <section style="margin-top: 100px;">
+                    <h3
+                        style="font-size: 45px; font-weight: 700; border-bottom: 4px solid #94a3b8; padding-bottom: 10px; margin-bottom: 20px; color: #64748b;">
+                        References</h3>
+                    <div style="font-size: 32px; color: #475569;">
+                        <p style="margin-bottom: 15px;">Jamil, M., et al. (2021). <em>Impact of Project Tracking on
+                                Decision Making in Construction.</em> Journal of Construction Management.</p>
+                        <p style="margin-bottom: 15px;">Serrador, P., & Pinto, J. K. (2015). <em>Does Agile work? — A
+                                quantitative analysis of agile project success.</em> International Journal of Project
+                            Management.</p>
+                    </div>
+                </section>
+
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function saveAsImage() {
+            const element = document.getElementById('posterContent');
+            const btn = event.target;
+            const originalText = btn.innerText;
+
+            // Store original styles
+            const originalTransform = element.style.transform;
+            const originalMargin = element.style.marginBottom;
+            const originalBoxShadow = element.style.boxShadow;
+
+            // Reset for capture
+            element.style.transform = 'none';
+            element.style.marginBottom = '0';
+            element.style.boxShadow = 'none';
+
+            btn.innerText = 'Generating... (This may take a moment)';
+
+            html2canvas(element, {
+                scale: 1, // 1 is sufficient given the base size is 1000mm width (approx 3700px)
+                useCORS: true,
+                backgroundColor: '#ffffff'
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'EC_Newenergie_Poster.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+
+                // Restore
+                element.style.transform = originalTransform;
+                element.style.marginBottom = originalMargin;
+                element.style.boxShadow = originalBoxShadow;
+                btn.innerText = originalText;
+            }).catch(err => {
+                console.error(err);
+                alert('Error generating image. Please try "Print to PDF" instead.');
+
+                // Restore
+                element.style.transform = originalTransform;
+                element.style.marginBottom = originalMargin;
+                element.style.boxShadow = originalBoxShadow;
+                btn.innerText = originalText;
+            });
+        }
+    </script>
+</body>
+
+</html>

@@ -10,6 +10,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <style>
 body { font-family: 'Inter', sans-serif; }
 .custom-input { border: 1px solid #e5e7eb; }
@@ -284,6 +287,23 @@ function bindDynamicInputs() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Initialize Select2 for project dropdown
+  $('#projectSelect').select2({
+    placeholder: 'Search and select a project',
+    allowClear: true,
+    width: '256px'
+  });
+
+  // Handle project selection with Select2 - must be after initialization
+  $('#projectSelect').on('change', function() {
+    const projectId = this.value;
+    if (projectId) {
+      window.location.href = '{{ route("finance.tracker.project", ":id") }}'.replace(':id', projectId);
+    } else {
+      window.location.href = '{{ route("finance.tracker") }}';
+    }
+  });
+
   renderPaymentRows();
 
   document.getElementById('numPayments').addEventListener('change', () => {
@@ -294,15 +314,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const el = document.getElementById(id);
     if (el) {
       el.addEventListener('input', updateTotalsAndStatuses);
-    }
-  });
-
-  document.getElementById('projectSelect').addEventListener('change', function() {
-    const projectId = this.value;
-    if (projectId) {
-      window.location.href = '{{ route("finance.tracker.project", ":id") }}'.replace(':id', projectId);
-    } else {
-      window.location.href = '{{ route("finance.tracker") }}';
     }
   });
 

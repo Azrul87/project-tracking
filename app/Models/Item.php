@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Item extends Model
 {
@@ -22,6 +22,7 @@ class Item extends Model
         'stock_total_amount',
         'stock_delivered',
         'stock_current_need',
+        'material_id', // Added foreign key to generic materials table
     ];
 
     protected $casts = [
@@ -31,11 +32,11 @@ class Item extends Model
     ];
 
     /**
-     * Get all project items that use this item.
+     * Get the project that owns this item.
      */
-    public function projectItems(): HasMany
+    public function project(): BelongsTo
     {
-        return $this->hasMany(ProjectItem::class, 'item_id', 'item_id');
+        return $this->belongsTo(Project::class, 'project_id', 'project_id');
     }
 
     /**

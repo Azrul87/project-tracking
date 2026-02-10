@@ -6,6 +6,7 @@ use App\Models\Project;
 use App\Models\Client;
 use App\Models\User;
 use App\Models\ProjectFile;
+use App\Models\ProjectWorkflowStage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -18,7 +19,7 @@ class ProjectController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Project::with(['client', 'salesPic']);
+        $query = Project::with(['client', 'salesPic', 'workflowStage']);
 
         // Search functionality
         if ($request->has('search') && $request->search) {
@@ -52,9 +53,7 @@ class ProjectController extends Controller
         }
 
         // Payment Status filter
-        if ($request->has('payment_status') && $request->payment_status) {
-            $query->where('payment_status', $request->payment_status);
-        }
+        // Payment status is now calculated from payments table, so filtering is done in the view
 
         $projects = $query->latest()->get();
 
@@ -62,7 +61,8 @@ class ProjectController extends Controller
         $statuses = Project::distinct()->whereNotNull('status')->pluck('status')->sort()->values();
         $categories = Project::distinct()->whereNotNull('category')->pluck('category')->sort()->values();
         $installers = Project::distinct()->whereNotNull('installer')->where('installer', '!=', 'Other')->pluck('installer')->sort()->values();
-        $paymentStatuses = Project::distinct()->whereNotNull('payment_status')->pluck('payment_status')->sort()->values();
+        // Payment statuses are now calculated from payments table
+        $paymentStatuses = collect(['Pending 1st Payment', 'Fully Paid', 'Overdue', '1 Payment(s) Received', '2 Payment(s) Received', '3 Payment(s) Received']);
         $hasOtherInstaller = Project::where('installer', 'Other')->exists();
 
         return view('projects', compact('projects', 'statuses', 'categories', 'installers', 'paymentStatuses', 'hasOtherInstaller'));
@@ -75,7 +75,8 @@ class ProjectController extends Controller
     {
         $clients = Client::orderBy('client_name')->get();
         $users = User::orderBy('name')->get();
-        return view('projects.create', compact('clients', 'users'));
+        $workflowStages = \App\Helpers\WorkflowHelper::getEPCCWorkflowStages();
+        return view('projects.create', compact('clients', 'users', 'workflowStages'));
     }
 
     /**
@@ -105,8 +106,6 @@ class ProjectController extends Controller
                 'additional_remark' => 'nullable|string',
                 'closed_date' => 'nullable|date',
                 'status' => 'nullable|string|max:255',
-                'invoice_status' => 'nullable|string|max:255',
-                'payment_status' => 'nullable|string|max:255',
                 'procurement_status' => 'nullable|string|max:255',
                 'module' => 'nullable|string|max:255',
                 'module_quantity' => 'nullable|integer|min:0',
@@ -157,100 +156,138 @@ class ProjectController extends Controller
 
         // Auto-generate project ID
         $validated['project_id'] = Project::generateProjectId();
-        
-        // Set initial workflow stage to "Client Enquiry" (BDT starts here)
-        $validated['workflow_stage'] = Project::WORKFLOW_CLIENT_ENQUIRY;
         $validated['status'] = $validated['status'] ?? 'Planning';
         
+        // Extract workflow fields from validated data
+        $workflowData = [];
+        $workflowFields = [
+            'client_enquiry_date', 'proposal_preparation_date', 'proposal_submission_date',
+            'proposal_acceptance_date', 'letter_of_award_date', 'first_invoice_date',
+            'first_invoice_payment_date', 'site_study_date', 'nem_application_submission_date',
+            'project_planning_date', 'nem_approval_date', 'st_license_application_date',
+            'second_invoice_date', 'second_invoice_payment_date', 'material_procurement_date',
+            'subcon_appointment_date', 'material_delivery_date', 'site_mobilization_date',
+            'st_license_approval_date', 'system_testing_date', 'system_commissioning_date',
+            'nem_meter_change_date', 'last_invoice_date', 'last_invoice_payment_date',
+            'system_energize_date', 'nemcd_obtained_date', 'system_training_date',
+            'project_handover_to_client_date', 'project_closure_date', 'handover_to_om_date',
+            'om_site_study_date', 'om_schedule_prepared_date', 'om_start_date', 'om_end_date',
+            'workflow_stage', 'om_status',
+        ];
+        
+        foreach ($workflowFields as $field) {
+            if (isset($validated[$field])) {
+                $workflowData[$field] = $validated[$field];
+                unset($validated[$field]);
+            }
+        }
+        
+        // Set initial workflow stage to "Client Enquiry" (BDT starts here)
+        $workflowData['workflow_stage'] = $workflowData['workflow_stage'] ?? Project::WORKFLOW_CLIENT_ENQUIRY;
+        
         // Set client enquiry date to today if not provided
-        if (empty($validated['client_enquiry_date'])) {
-            $validated['client_enquiry_date'] = now()->toDateString();
+        if (empty($workflowData['client_enquiry_date'])) {
+            $workflowData['client_enquiry_date'] = now()->toDateString();
         }
 
-        $project = Project::create($validated);
-        
-        // Create initial workflow status record
-        $project->setStatus(
-            \App\Models\ProjectStatus::TYPE_CLIENT_ENQUIRY,
-            \App\Models\ProjectStatus::STATUS_IN_PROGRESS,
-            Auth::check() ? Auth::user()->user_id : null,
-            'Project created by sales person (BDT) - Client Enquiry stage initiated'
-        );
+        // Use transaction to ensure data consistency
+        DB::beginTransaction();
+        try {
+            // Create the project - boot() method will auto-create workflow stage
+            $project = Project::create($validated);
+            
+            // Update the auto-created workflow stage with our workflow data
+            ProjectWorkflowStage::where('project_id', $project->project_id)
+                ->update($workflowData);
+            
+            // Refresh to load the updated relationship
+            $project->load('workflowStage');
+            
+            // Create initial workflow status record
+            $project->setStatus(
+                \App\Models\ProjectStatus::TYPE_CLIENT_ENQUIRY,
+                \App\Models\ProjectStatus::STATUS_IN_PROGRESS,
+                Auth::check() ? Auth::user()->user_id : null,
+                'Project created by sales person (BDT) - Client Enquiry stage initiated'
+            );
+            
+            DB::commit();
+            
+            return redirect()->route('projects.index')->with('success', 'Project created successfully. Workflow stage set to: Client Enquiry');
+        } catch (\Illuminate\Database\QueryException $e) {
+            DB::rollBack();
+            Log::error('Database error creating project', ['error' => $e->getMessage()]);
+            
+            $errorMessage = $this->translateDatabaseError($e);
+            return redirect()->back()->withInput()->withErrors(['error' => $errorMessage]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error creating project', ['error' => $e->getMessage()]);
+            return redirect()->back()->withInput()->withErrors(['error' => 'An unexpected error occurred while creating the project. Please try again or contact support if the problem persists.']);
+        }
+    }
 
-        return redirect()->route('projects.index')->with('success', 'Project created successfully. Workflow stage set to: Client Enquiry');
+
+
+    /**
+     * Show the form for editing project materials.
+     */
+    public function editMaterials(Project $project)
+    {
+        // Load materials relationship
+        $project->load('materials');
+        
+        // Load material fields dynamically from database
+        $materialFields = \App\Models\Material::orderBy('category')
+            ->orderBy('name')
+            ->pluck('name', 'code')
+            ->toArray();
+
+        return view('projects.edit-materials', compact('project', 'materialFields'));
     }
 
     /**
-     * Display the specified project.
+     * Update the specified project materials in storage.
      */
+    public function updateMaterials(Request $request, Project $project)
+    {
+        // Get all materials from database
+        $materials = \App\Models\Material::pluck('id', 'code');
+        
+        // Build validation rules dynamically
+        $rules = [];
+        foreach ($materials->keys() as $code) {
+            $rules[$code] = 'nullable|integer|min:0';
+        }
+        
+        $validated = $request->validate($rules);
+
+        // Update materials - delete all existing and insert new ones
+        // This is cleaner than updating each one individually
+        $project->projectMaterials()->delete();
+        
+        foreach ($validated as $materialCode => $quantity) {
+            if ($quantity > 0 && isset($materials[$materialCode])) {
+                \App\Models\ProjectMaterial::create([
+                    'project_id' => $project->project_id,
+                    'material_id' => $materials[$materialCode],
+                    'quantity' => $quantity,
+                ]);
+            }
+        }
+
+        return redirect()->route('inventory')->with('success', 'Materials updated successfully');
+    }
+
     public function show($id)
     {
-        // Sample project data - in a real application, this would come from a database
-        $projects = [
-            1 => [
-                'id' => 1,
-                'project_no' => '#PRJ-001',
-                'client' => 'ABC Corporation',
-                'location' => 'New York, NY',
-                'status' => 'active',
-                'payment_status' => 'paid',
-                'installer' => 'John Doe',
-                'installation_date' => '2024-01-15',
-                'sales_pic' => 'Sarah Wilson',
-                'category' => 'commercial'
-            ],
-            2 => [
-                'id' => 2,
-                'project_no' => '#PRJ-002',
-                'client' => 'XYZ Industries',
-                'location' => 'Los Angeles, CA',
-                'status' => 'pending',
-                'payment_status' => 'pending',
-                'installer' => 'Jane Smith',
-                'installation_date' => '2024-02-20',
-                'sales_pic' => 'Mike Johnson',
-                'category' => 'industrial'
-            ],
-            3 => [
-                'id' => 3,
-                'project_no' => '#PRJ-003',
-                'client' => 'Tech Solutions Ltd',
-                'location' => 'Chicago, IL',
-                'status' => 'completed',
-                'payment_status' => 'paid',
-                'installer' => 'Mike Johnson',
-                'installation_date' => '2024-01-10',
-                'sales_pic' => 'John Doe',
-                'category' => 'residential'
-            ],
-            4 => [
-                'id' => 4,
-                'project_no' => '#PRJ-004',
-                'client' => 'Global Enterprises',
-                'location' => 'Miami, FL',
-                'status' => 'on-hold',
-                'payment_status' => 'overdue',
-                'installer' => 'Sarah Wilson',
-                'installation_date' => '2024-03-05',
-                'sales_pic' => 'Jane Smith',
-                'category' => 'commercial'
-            ],
-            5 => [
-                'id' => 5,
-                'project_no' => '#PRJ-005',
-                'client' => 'Innovation Corp',
-                'location' => 'Seattle, WA',
-                'status' => 'active',
-                'payment_status' => 'pending',
-                'installer' => 'John Doe',
-                'installation_date' => '2024-02-28',
-                'sales_pic' => 'Sarah Wilson',
-                'category' => 'renovation'
-            ]
-        ];
-
-        $project = $projects[$id] ?? $projects[1]; // Default to first project if ID not found
-        
+        // Get project with related data
+        // Try to find by ID (numeric) or project_id (string)
+        $project = Project::with(['client', 'salesPic', 'materials'])
+            ->where('id', $id)
+            ->orWhere('project_id', $id)
+            ->firstOrFail();
+            
         return view('project-detail', compact('project'));
     }
 
@@ -259,11 +296,16 @@ class ProjectController extends Controller
      */
     public function dashboard($id)
     {
-        $project = Project::with(['client', 'salesPic', 'files', 'statuses'])->find($id);
+        // Always get fresh data from database, don't use cached relationships
+        $project = Project::with(['client', 'salesPic', 'files.uploader', 'statuses'])->find($id);
 
         if (!$project) {
             return redirect()->route('projects.index')->with('error', 'Project not found.');
         }
+        
+        // Force reload workflowStage from database to get latest data
+        $project->unsetRelation('workflowStage');
+        $project->load('workflowStage');
 
         // Get workflow stages
         $epccStages = \App\Helpers\WorkflowHelper::getEPCCWorkflowStages();
@@ -282,15 +324,27 @@ class ProjectController extends Controller
             $currentStageIndex = 0;
         }
         
+        // Get workflow stage directly from database to ensure fresh data
+        $workflowStage = ProjectWorkflowStage::where('project_id', $project->project_id)->first();
+        
         foreach ($epccStages as $stageKey => $stageInfo) {
             $dateField = $stageInfo['date_field'];
-            $dateValue = $project->$dateField ?? null;
+            
+            // Get the date value directly from workflow stage model
+            $dateValue = $workflowStage ? ($workflowStage->$dateField ?? null) : null;
             
             // Determine stage status
             $status = 'pending';
             $stageIndex = array_search($stageKey, $stageKeys);
             
-            if ($dateValue) {
+            // Check if date exists - handle Carbon objects, DateTime, and date strings
+            $hasDate = !empty($dateValue) && (
+                $dateValue instanceof \Carbon\Carbon || 
+                $dateValue instanceof \DateTime || 
+                (is_string($dateValue) && strlen(trim($dateValue)) > 0)
+            );
+            
+            if ($hasDate) {
                 $status = 'completed';
                 $completedCount++;
             } elseif ($stageKey === $currentStage) {
@@ -324,10 +378,18 @@ class ProjectController extends Controller
         $omProgress = [];
         foreach ($omStages as $stageKey => $stageInfo) {
             $dateField = $stageInfo['date_field'];
-            $dateValue = $dateField ? ($project->$dateField ?? null) : null;
+            // Get date directly from workflow stage model
+            $dateValue = $workflowStage && $dateField ? ($workflowStage->$dateField ?? null) : null;
             
             $status = 'pending';
-            if ($dateValue) {
+            // Check if date exists
+            $hasDate = !empty($dateValue) && (
+                $dateValue instanceof \Carbon\Carbon || 
+                $dateValue instanceof \DateTime || 
+                (is_string($dateValue) && strlen(trim($dateValue)) > 0)
+            );
+            
+            if ($hasDate) {
                 $status = 'completed';
             }
             
@@ -351,6 +413,9 @@ class ProjectController extends Controller
      */
     public function edit(Project $project)
     {
+        // Eager load the workflowStage relationship
+        $project->load('workflowStage');
+        
         $clients = Client::orderBy('client_name')->get();
         $users = User::orderBy('name')->get();
         return view('projects.edit', compact('project', 'clients', 'users'));
@@ -396,8 +461,6 @@ class ProjectController extends Controller
                 'additional_remark' => 'nullable|string',
                 'closed_date' => 'nullable|date',
                 'status' => 'nullable|string|max:255',
-                'invoice_status' => 'nullable|string|max:255',
-                'payment_status' => 'nullable|string|max:255',
                 'procurement_status' => 'nullable|string|max:255',
                 'module' => 'nullable|string|max:255',
                 'module_quantity' => 'nullable|integer|min:0',
@@ -453,8 +516,32 @@ class ProjectController extends Controller
                 return $value === '' ? null : $value;
             }, $validated);
 
+            // Extract workflow fields from validated data
+            $workflowData = [];
+            $workflowFields = [
+                'client_enquiry_date', 'proposal_preparation_date', 'proposal_submission_date',
+                'proposal_acceptance_date', 'letter_of_award_date', 'first_invoice_date',
+                'first_invoice_payment_date', 'site_study_date', 'nem_application_submission_date',
+                'project_planning_date', 'nem_approval_date', 'st_license_application_date',
+                'second_invoice_date', 'second_invoice_payment_date', 'material_procurement_date',
+                'subcon_appointment_date', 'material_delivery_date', 'site_mobilization_date',
+                'st_license_approval_date', 'system_testing_date', 'system_commissioning_date',
+                'nem_meter_change_date', 'last_invoice_date', 'last_invoice_payment_date',
+                'system_energize_date', 'nemcd_obtained_date', 'system_training_date',
+                'project_handover_to_client_date', 'project_closure_date', 'handover_to_om_date',
+                'om_site_study_date', 'om_schedule_prepared_date', 'om_start_date', 'om_end_date',
+                'workflow_stage', 'om_status',
+            ];
+            
+            foreach ($workflowFields as $field) {
+                if (isset($validated[$field])) {
+                    $workflowData[$field] = $validated[$field];
+                    unset($validated[$field]);
+                }
+            }
+
             // Use database transaction to ensure data integrity
-            DB::transaction(function () use ($project, $validated, $originalProjectId) {
+            DB::transaction(function () use ($project, $validated, $workflowData, $originalProjectId) {
                 // Refresh the project to ensure we have the latest data
                 $project->refresh();
 
@@ -463,17 +550,25 @@ class ProjectController extends Controller
                     throw new \Exception('Project was deleted during update process');
                 }
 
+                // Update or create workflow stage record
+                if (!empty($workflowData)) {
+                    ProjectWorkflowStage::updateOrCreate(
+                        ['project_id' => $project->project_id],
+                        $workflowData
+                    );
+                }
+
                 // Update workflow stage status if dates are provided
                 $epccStages = \App\Helpers\WorkflowHelper::getEPCCWorkflowStages();
                 foreach ($epccStages as $stageKey => $stageInfo) {
                     $dateField = $stageInfo['date_field'];
-                    if (isset($validated[$dateField]) && $validated[$dateField]) {
+                    if (isset($workflowData[$dateField]) && $workflowData[$dateField]) {
                         // Update status to completed when date is set
                         $project->setStatus(
                             $stageInfo['status_type'],
                             \App\Models\ProjectStatus::STATUS_COMPLETED,
                             Auth::check() ? Auth::user()->user_id : null,
-                            "Stage completed on {$validated[$dateField]}"
+                            "Stage completed on {$workflowData[$dateField]}"
                         );
                     }
                 }
@@ -483,11 +578,18 @@ class ProjectController extends Controller
                 $project->project_id = $originalProjectId; // Ensure project_id never changes
                 $project->save();
 
+                // Clear all relationship caches to ensure fresh data
+                $project->unsetRelation('workflowStage');
+                $project->unsetRelation('statuses');
+                
                 // Verify project still exists after update
                 $project->refresh();
                 if (!$project->exists) {
                     throw new \Exception('Project was deleted after update');
                 }
+                
+                // Reload relationships with fresh data
+                $project->load(['workflowStage', 'statuses']);
             });
 
             Log::info('Project updated successfully', ['project_id' => $project->project_id]);
@@ -496,10 +598,88 @@ class ProjectController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) {
             Log::warning('Validation failed during project update', ['project_id' => $project->project_id, 'errors' => $e->errors()]);
             return redirect()->back()->withErrors($e->errors())->withInput();
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Handle database-specific errors with user-friendly messages
+            Log::error('Database error updating project', ['project_id' => $project->project_id ?? 'unknown', 'error' => $e->getMessage()]);
+            
+            $errorMessage = $this->translateDatabaseError($e);
+            return redirect()->back()->withInput()->withErrors(['error' => $errorMessage]);
         } catch (\Exception $e) {
             Log::error('Error updating project', ['project_id' => $project->project_id ?? 'unknown', 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
-            return redirect()->back()->withInput()->withErrors(['error' => 'Failed to update project: ' . $e->getMessage()]);
+            return redirect()->back()->withInput()->withErrors(['error' => 'An unexpected error occurred while updating the project. Please try again or contact support if the problem persists.']);
         }
+    }
+
+    /**
+     * Translate database errors into user-friendly messages.
+     */
+    private function translateDatabaseError(\Illuminate\Database\QueryException $e): string
+    {
+        $errorMessage = $e->getMessage();
+        $errorCode = $e->getCode();
+        
+        // Map database column names to user-friendly field names
+        $fieldNames = [
+            'pv_system_capacity_kwp' => 'PV System Capacity',
+            'project_value_rm' => 'Project Value',
+            'vo_rm' => 'VO Amount',
+            'module_quantity' => 'Module Quantity',
+            'client_id' => 'Client',
+            'sales_pic_id' => 'Sales PIC',
+            'name' => 'Project Name',
+            'location' => 'Location',
+            'payment_method' => 'Payment Method',
+            'contract_type' => 'Contract Type',
+            'insurance_warranty' => 'Insurance/Warranty',
+            'project_status' => 'Project Status',
+            'installer' => 'Installer',
+        ];
+        
+        // Numeric value out of range error (SQLSTATE 22003)
+        if (strpos($errorMessage, '22003') !== false || strpos($errorMessage, 'Out of range') !== false) {
+            // Extract the column name from the error message
+            preg_match("/column '([^']+)'/", $errorMessage, $matches);
+            $columnName = $matches[1] ?? 'unknown field';
+            $friendlyName = $fieldNames[$columnName] ?? $columnName;
+            
+            // Extract the value that caused the error
+            preg_match("/`$columnName`\s*=\s*([0-9.]+)/", $errorMessage, $valueMatches);
+            $badValue = $valueMatches[1] ?? 'the entered value';
+            
+            return "The value '$badValue' is too large for the '$friendlyName' field. Please enter a smaller number. Maximum allowed values are typically under 1 million for currency fields and under 100,000 for capacity fields.";
+        }
+        
+        // Duplicate entry error (SQLSTATE 23000)
+        if (strpos($errorMessage, '23000') !== false || strpos($errorMessage, 'Duplicate entry') !== false) {
+            preg_match("/Duplicate entry '([^']+)' for key '([^']+)'/", $errorMessage, $matches);
+            $duplicateValue = $matches[1] ?? 'this value';
+            $keyName = $matches[2] ?? 'field';
+            
+            return "A project with this $keyName already exists. Please use a different value.";
+        }
+        
+        // Data too long error (SQLSTATE 22001)
+        if (strpos($errorMessage, '22001') !== false || strpos($errorMessage, 'Data too long') !== false) {
+            preg_match("/column '([^']+)'/", $errorMessage, $matches);
+            $columnName = $matches[1] ?? 'unknown field';
+            $friendlyName = $fieldNames[$columnName] ?? $columnName;
+            
+            return "The text entered for '$friendlyName' is too long. Please shorten it and try again.";
+        }
+        
+        // Foreign key constraint error (SQLSTATE 23000)
+        if (strpos($errorMessage, 'foreign key constraint fails') !== false) {
+            if (strpos($errorMessage, 'client_id') !== false) {
+                return "The selected client does not exist. Please select a valid client from the dropdown.";
+            }
+            if (strpos($errorMessage, 'sales_pic_id') !== false) {
+                return "The selected Sales PIC does not exist. Please select a valid user from the dropdown.";
+            }
+            return "The selected value for one of the fields is invalid. Please check your selections and try again.";
+        }
+        
+        // Default fallback with a more user-friendly message
+        return "There was a problem saving your changes. Please check that all numbers are reasonable values and all required fields are filled in correctly. If the problem continues, please contact support.";
     }
 
     /**

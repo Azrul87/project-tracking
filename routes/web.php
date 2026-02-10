@@ -7,7 +7,10 @@ use App\Http\Controllers\StatusSummaryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectFileController;
 use App\Http\Controllers\InsurancePolicyController;
-use App\Http\Controllers\FinanceController; 
+use App\Http\Controllers\FinanceController;
+use App\Http\Controllers\ClientController;
+use App\Http\Controllers\ItemController;
+use App\Http\Controllers\DashboardController; 
 
 Route::get('/', function () {
     return view('welcome');
@@ -48,7 +51,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::middleware(['auth'])->group(function () {
     
     // PM & Tech & General Dashboard
-    Route::get('/dashboard', function () { return view('dashboard'); })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Finance Routes
     Route::get('/finance-overview', [FinanceController::class, 'overview'])->name('finance.overview');
@@ -57,13 +60,16 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/finance-tracker', [FinanceController::class, 'store'])->name('finance.tracker.store');
     Route::delete('/finance-tracker/payment/{paymentId}', [FinanceController::class, 'destroyPayment'])->name('finance.tracker.payment.destroy');
 
-    // Supply Chain Access
-    Route::get('/inventory', function () {
-        return view('inventory'); // Create the view in step 4
-    })->name('inventory');
+    // Supply Chain Access - Materials/Inventory
+    Route::get('/inventory', [ItemController::class, 'index'])->name('inventory');
 
-    // ... keep your existing routes here
+    // Client Management
+    Route::resource('clients', ClientController::class);
+    
+    // Project Management
     Route::resource('projects', ProjectController::class);
+    Route::get('/projects/{project}/materials/edit', [ProjectController::class, 'editMaterials'])->name('projects.materials.edit');
+    Route::put('/projects/{project}/materials', [ProjectController::class, 'updateMaterials'])->name('projects.materials.update');
     Route::post('/projects/{project}/files', [ProjectFileController::class, 'store'])->name('projects.files.store');
     Route::get('/projects/{project}/files/{file}', [ProjectFileController::class, 'download'])->name('projects.files.download');
     Route::delete('/projects/{project}/files/{file}', [ProjectFileController::class, 'destroy'])->name('projects.files.destroy');

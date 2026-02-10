@@ -106,20 +106,6 @@
             color: #991b1b;
             border: 1px solid rgba(239, 68, 68, 0.2);
         }
-        .table-container {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            width: 100%;
-        }
-        .table-container table {
-            width: 100%;
-            min-width: 1400px;
-        }
-        @media (min-width: 1536px) {
-            .table-container table {
-                min-width: 100%;
-            }
-        }
         .glass-card {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
@@ -152,31 +138,6 @@
         .input-field:focus {
             border-color: #4f46e5;
             box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-        }
-        .table-row {
-            transition: all 0.2s ease;
-        }
-        .table-row:hover {
-            background: linear-gradient(90deg, #f8fafc 0%, #f1f5f9 100%);
-            transform: scale(1.001);
-        }
-        .action-btn {
-            transition: all 0.2s ease;
-            padding: 6px;
-            border-radius: 8px;
-        }
-        .action-btn:hover {
-            transform: translateY(-2px) scale(1.1);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-        .action-btn.view:hover {
-            background: rgba(59, 130, 246, 0.1);
-        }
-        .action-btn.edit:hover {
-            background: rgba(99, 102, 241, 0.1);
-        }
-        .action-btn.delete:hover {
-            background: rgba(239, 68, 68, 0.1);
         }
         .header-gradient {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -311,154 +272,182 @@
                 </div>
             </form>
 
-            <!-- Data Table -->
-            <div class="glass-card rounded-2xl overflow-hidden w-full shadow-xl">
-                <div class="table-container custom-scrollbar w-full">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gradient-to-r from-gray-50 to-gray-100 sticky top-0 z-10">
-                            <tr>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Project No</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Client</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Location</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Status</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Payment Status</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Installer</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Installation Date</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap">Sales PIC</th>
-                                <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider whitespace-nowrap min-w-[120px]">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-100">
-                            @forelse($projects as $project)
-                            <tr class="table-row">
-                                <td class="px-6 py-5 whitespace-nowrap">
-                                    <span class="text-sm font-bold text-gray-900">{{ $project->project_id }}</span>
-                                </td>
-                                <td class="px-6 py-5 whitespace-nowrap">
-                                    <span class="text-sm font-semibold text-gray-900">{{ $project->client->client_name ?? 'N/A' }}</span>
-                                </td>
-                                <td class="px-6 py-5 text-sm text-gray-600 max-w-xs truncate" title="{{ $project->location ?? 'N/A' }}">
-                                    <div class="flex items-center">
-                                        <i class="ri-map-pin-line mr-2 text-gray-400"></i>
-                                        {{ $project->location ?? 'N/A' }}
-                                    </div>
-                                </td>
-                                <td class="px-6 py-5 whitespace-nowrap">
-                                    @php
-                                        $status = strtolower(str_replace(' ', '-', $project->status ?? 'planning'));
-                                    @endphp
-                                    <span class="status-badge status-{{ $status }}">
-                                        {{ $project->status ?? 'Planning' }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-5 whitespace-nowrap">
-                                    @php
-                                        $paymentStatus = strtolower($project->payment_status ?? 'pending');
-                                    @endphp
-                                    <span class="status-badge payment-{{ $paymentStatus }}">
-                                        {{ $project->payment_status ?? 'Pending' }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-5 whitespace-nowrap text-sm font-medium text-gray-800">
-                                    @if($project->installer === 'Other' && $project->installer_other)
-                                        <div class="flex items-center">
-                                            <i class="ri-user-line mr-2 text-gray-400"></i>
-                                            {{ $project->installer_other }}
-                                        </div>
-                                    @else
-                                        <div class="flex items-center">
-                                            <i class="ri-user-line mr-2 text-gray-400"></i>
-                                            {{ $project->installer ?? '-' }}
-                                        </div>
-                                    @endif
-                                </td>
-                                <td class="px-6 py-5 whitespace-nowrap text-sm text-gray-600">
-                                    @if($project->installation_date)
-                                        <div class="flex items-center">
-                                            <i class="ri-calendar-line mr-2 text-gray-400"></i>
-                                            {{ $project->installation_date->format('Y-m-d') }}
-                                        </div>
-                                    @else
-                                        <span class="text-gray-400">-</span>
-                                    @endif
-                                </td>
-                                <td class="px-6 py-5 whitespace-nowrap text-sm font-medium text-gray-800">
-                                    <div class="flex items-center">
-                                        <i class="ri-user-star-line mr-2 text-gray-400"></i>
-                                        {{ $project->salesPic->name ?? 'N/A' }}
-                                    </div>
-                                </td>
-                                <td class="px-6 py-5 whitespace-nowrap text-sm font-medium min-w-[120px]">
-                                    <div class="flex space-x-2 items-center">
-                                        <a href="{{ route('projects.dashboard', $project->project_id) }}" class="action-btn view text-blue-600 hover:text-blue-700" title="View Dashboard">
-                                            <i class="ri-eye-line text-xl"></i>
-                                        </a>
-                                        <a href="{{ route('projects.edit', $project->project_id) }}" class="action-btn edit text-indigo-600 hover:text-indigo-700" title="Edit">
-                                            <i class="ri-pencil-line text-xl"></i>
-                                        </a>
-                                        <form action="{{ route('projects.destroy', $project->project_id) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this project?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="action-btn delete text-red-600 hover:text-red-700" title="Delete">
-                                                <i class="ri-delete-bin-line text-xl"></i>
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="9" class="px-6 py-16 text-center">
-                                    <div class="flex flex-col items-center justify-center">
-                                        <div class="bg-gradient-to-br from-gray-100 to-gray-200 rounded-full p-6 mb-4">
-                                            <i class="ri-inbox-line text-5xl text-gray-400"></i>
-                                        </div>
-                                        <p class="text-xl font-bold text-gray-700 mb-2">No projects found</p>
-                                        <p class="text-sm text-gray-500 mb-4">
-                                            @if(request()->hasAny(['search', 'status', 'category', 'installer', 'payment_status']))
-                                                Try adjusting your filters or 
-                                                <a href="{{ route('projects.index') }}" class="text-primary hover:underline font-semibold">clear all filters</a>
-                                            @else
-                                                <a href="{{ route('projects.create') }}" class="text-primary hover:underline font-semibold">Create your first project</a>
-                                            @endif
-                                        </p>
-                                    </div>
-                                </td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+            <!-- Projects Grid -->
+            @forelse($projects as $project)
+            <div class="glass-card rounded-2xl p-6 mb-4 shadow-xl hover:shadow-2xl transition-all duration-300 project-card" style="opacity: 0; transform: translateY(10px);">
+                <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+                    <!-- Left Column: Project Details -->
+                    <div class="flex-1 space-y-4">
+                        <!-- Project Header -->
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-900 mb-1">{{ $project->project_id }}</h3>
+                                <p class="text-base font-semibold text-gray-700 flex items-center">
+                                    <i class="ri-user-line mr-2 text-primary"></i>
+                                    {{ $project->client->client_name ?? 'N/A' }}
+                                </p>
+                            </div>
+                        </div>
 
-                <!-- Results Count -->
-                @if($projects->count() > 0)
-                <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-t border-gray-200">
-                    <div class="flex items-center justify-between">
-                        <p class="text-sm font-semibold text-gray-700">
-                            <i class="ri-file-list-line mr-2"></i>
-                            Showing <span class="text-primary font-bold">{{ $projects->count() }}</span> {{ Str::plural('project', $projects->count()) }}
-                            @if(request()->hasAny(['search', 'status', 'category', 'installer', 'payment_status']))
-                                <span class="text-gray-500 font-normal">(filtered)</span>
-                            @endif
-                        </p>
+                        <!-- Project Info Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Location -->
+                            <div class="flex items-start">
+                                <div class="bg-blue-50 rounded-lg p-2 mr-3">
+                                    <i class="ri-map-pin-line text-blue-600 text-lg"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-xs font-semibold text-gray-500 uppercase mb-1">Location</p>
+                                    <p class="text-sm text-gray-900 truncate" title="{{ $project->location ?? 'N/A' }}">{{ $project->location ?? 'N/A' }}</p>
+                                </div>
+                            </div>
+
+                            <!-- Installer -->
+                            <div class="flex items-start">
+                                <div class="bg-purple-50 rounded-lg p-2 mr-3">
+                                    <i class="ri-tools-line text-purple-600 text-lg"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-xs font-semibold text-gray-500 uppercase mb-1">Installer</p>
+                                    <p class="text-sm text-gray-900 truncate">
+                                        @if($project->installer === 'Other' && $project->installer_other)
+                                            {{ $project->installer_other }}
+                                        @else
+                                            {{ $project->installer ?? '-' }}
+                                        @endif
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Installation Date -->
+                            <div class="flex items-start">
+                                <div class="bg-green-50 rounded-lg p-2 mr-3">
+                                    <i class="ri-calendar-line text-green-600 text-lg"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-xs font-semibold text-gray-500 uppercase mb-1">Installation Date</p>
+                                    <p class="text-sm text-gray-900">
+                                        @if($project->installation_date)
+                                            {{ $project->installation_date->format('d M Y') }}
+                                        @else
+                                            <span class="text-gray-400">Not set</span>
+                                        @endif
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Sales PIC -->
+                            <div class="flex items-start">
+                                <div class="bg-amber-50 rounded-lg p-2 mr-3">
+                                    <i class="ri-user-star-line text-amber-600 text-lg"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-xs font-semibold text-gray-500 uppercase mb-1">Sales PIC</p>
+                                    <p class="text-sm text-gray-900 truncate">{{ $project->salesPic->name ?? 'N/A' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Status & Actions -->
+                    <div class="lg:w-64 flex flex-col gap-4">
+                        <!-- Status Badges -->
+                        <div class="space-y-2">
+                            <div>
+                                <p class="text-xs font-semibold text-gray-500 uppercase mb-2">Project Status</p>
+                                @php
+                                    $status = strtolower(str_replace(' ', '-', $project->status ?? 'planning'));
+                                @endphp
+                                <span class="status-badge status-{{ $status }} w-full justify-center">
+                                    {{ $project->status ?? 'Planning' }}
+                                </span>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold text-gray-500 uppercase mb-2">Payment Status</p>
+                                @php
+                                    $paymentStatus = strtolower($project->payment_status ?? 'pending');
+                                @endphp
+                                <span class="status-badge payment-{{ $paymentStatus }} w-full justify-center">
+                                    {{ $project->payment_status ?? 'Pending' }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="border-t pt-4 space-y-2">
+                            <a href="{{ route('projects.dashboard', $project->project_id) }}" 
+                               class="flex items-center justify-center w-full px-4 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-md hover:shadow-lg">
+                                <i class="ri-dashboard-line mr-2"></i>
+                                View Project
+                            </a>
+                            <div class="flex gap-2">
+                                <a href="{{ route('projects.edit', $project->project_id) }}" 
+                                   class="flex-1 flex items-center justify-center px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-lg font-semibold hover:from-indigo-600 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg">
+                                    <i class="ri-pencil-line mr-2"></i>
+                                    Edit
+                                </a>
+                                <form action="{{ route('projects.destroy', $project->project_id) }}" 
+                                      method="POST" 
+                                      class="flex-1"
+                                      onsubmit="return confirm('Are you sure you want to delete this project?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" 
+                                            class="w-full flex items-center justify-center px-4 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-semibold hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-md hover:shadow-lg">
+                                        <i class="ri-delete-bin-line mr-2"></i>
+                                        Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                @endif
             </div>
+            @empty
+            <div class="glass-card rounded-2xl p-16 shadow-xl">
+                <div class="flex flex-col items-center justify-center">
+                    <div class="bg-gradient-to-br from-gray-100 to-gray-200 rounded-full p-6 mb-4">
+                        <i class="ri-inbox-line text-5xl text-gray-400"></i>
+                    </div>
+                    <p class="text-xl font-bold text-gray-700 mb-2">No projects found</p>
+                    <p class="text-sm text-gray-500 mb-4">
+                        @if(request()->hasAny(['search', 'status', 'category', 'installer', 'payment_status']))
+                            Try adjusting your filters or 
+                            <a href="{{ route('projects.index') }}" class="text-primary hover:underline font-semibold">clear all filters</a>
+                        @else
+                            <a href="{{ route('projects.create') }}" class="text-primary hover:underline font-semibold">Create your first project</a>
+                        @endif
+                    </p>
+                </div>
+            </div>
+            @endforelse
+
+            <!-- Results Count -->
+            @if($projects->count() > 0)
+            <div class="glass-card rounded-2xl px-6 py-4 shadow-xl mt-4">
+                <div class="flex items-center justify-between">
+                    <p class="text-sm font-semibold text-gray-700">
+                        <i class="ri-file-list-line mr-2"></i>
+                        Showing <span class="text-primary font-bold">{{ $projects->count() }}</span> {{ Str::plural('project', $projects->count()) }}
+                        @if(request()->hasAny(['search', 'status', 'category', 'installer', 'payment_status']))
+                            <span class="text-gray-500 font-normal">(filtered)</span>
+                        @endif
+                    </p>
+                </div>
+            </div>
+            @endif
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Add smooth animations
-            const rows = document.querySelectorAll('.table-row');
-            rows.forEach((row, index) => {
-                row.style.opacity = '0';
-                row.style.transform = 'translateY(10px)';
+            // Add smooth animations to project cards
+            const cards = document.querySelectorAll('.project-card');
+            cards.forEach((card, index) => {
                 setTimeout(() => {
-                    row.style.transition = 'all 0.3s ease';
-                    row.style.opacity = '1';
-                    row.style.transform = 'translateY(0)';
+                    card.style.transition = 'all 0.3s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
                 }, index * 50);
             });
 

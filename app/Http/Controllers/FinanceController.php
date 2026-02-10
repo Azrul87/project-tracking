@@ -33,7 +33,7 @@ class FinanceController extends Controller
     {
         // All authenticated users can view finance overview
 
-        $query = Project::with(['client', 'salesPic', 'payments']);
+        $query = Project::with(['client', 'salesPic', 'payments', 'workflowStage']);
 
         // Search functionality
         if ($request->has('search') && $request->search) {
@@ -109,7 +109,7 @@ class FinanceController extends Controller
         $paymentsData = [];
 
         if ($projectId) {
-            $project = Project::with(['client', 'salesPic', 'payments'])
+            $project = Project::with(['client', 'salesPic', 'payments', 'workflowStage'])
                 ->findOrFail($projectId);
             $payments = $project->payments()->orderBy('description')->get();
             
@@ -126,7 +126,7 @@ class FinanceController extends Controller
             })->toArray();
         }
 
-        $projects = Project::with('client')->orderBy('project_id')->get();
+        $projects = Project::with(['client', 'workflowStage'])->orderBy('project_id')->get();
 
         return view('finance-tracker', compact('project', 'payments', 'paymentsData', 'projects', 'canEdit'));
     }

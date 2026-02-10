@@ -365,14 +365,7 @@
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Contract Type</label>
                         <input type="text" name="contract_type" value="{{ old('contract_type', $project->contract_type) }}" class="input-field w-full rounded-xl p-3 focus:outline-none bg-white">
                     </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Invoice Status</label>
-                        <input type="text" name="invoice_status" value="{{ old('invoice_status', $project->invoice_status) }}" class="input-field w-full rounded-xl p-3 focus:outline-none bg-white">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Payment Status</label>
-                        <input type="text" name="payment_status" value="{{ old('payment_status', $project->payment_status) }}" class="input-field w-full rounded-xl p-3 focus:outline-none bg-white">
-                    </div>
+                    <!-- Note: Invoice Status and Payment Status are calculated from the payments table -->
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Procurement Status</label>
                         <input type="text" name="procurement_status" value="{{ old('procurement_status', $project->procurement_status) }}" class="input-field w-full rounded-xl p-3 focus:outline-none bg-white">

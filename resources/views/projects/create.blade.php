@@ -10,6 +10,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <style>
 :where([class^="ri-"])::before { content: "\f3c2"; }
 body { font-family: 'Inter', sans-serif; }
@@ -61,7 +64,7 @@ body { font-family: 'Inter', sans-serif; }
 </div>
 <div>
 <label class="block text-sm font-medium text-gray-700 mb-1">Client <span class="text-red-500">*</span></label>
-<select name="client_id" required class="w-full rounded-button p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary">
+<select name="client_id" id="clientSelect" required class="w-full rounded-button p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary">
 <option value="">Select Client</option>
 @foreach($clients as $client)
 <option value="{{ $client->client_id }}" {{ old('client_id') == $client->client_id ? 'selected' : '' }}>{{ $client->client_name }}</option>
@@ -110,18 +113,12 @@ body { font-family: 'Inter', sans-serif; }
 </div>
 
 <div>
-<label class="block text-sm font-medium text-gray-700 mb-1">Project Status</label>
+<label class="block text-sm font-medium text-gray-700 mb-1">Project Status (EPCC Stage)</label>
 <select name="project_status" class="w-full rounded-button p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary">
-<option value="">Select Status</option>
-<option value="Completed" {{ old('project_status') == 'Completed' ? 'selected' : '' }}>Completed</option>
-<option value="Pending GITA Application" {{ old('project_status') == 'Pending GITA Application' ? 'selected' : '' }}>Pending GITA Application</option>
-<option value="Pending Meter Change" {{ old('project_status') == 'Pending Meter Change' ? 'selected' : '' }}>Pending Meter Change</option>
-<option value="Pending NEM Qouta Approval" {{ old('project_status') == 'Pending NEM Qouta Approval' ? 'selected' : '' }}>Pending NEM Qouta Approval</option>
-<option value="Pending NEM Qouta Submission" {{ old('project_status') == 'Pending NEM Qouta Submission' ? 'selected' : '' }}>Pending NEM Qouta Submission</option>
-<option value="Pending NEM Welcome Letter" {{ old('project_status') == 'Pending NEM Welcome Letter' ? 'selected' : '' }}>Pending NEM Welcome Letter</option>
-<option value="Pending Site Installation" {{ old('project_status') == 'Pending Site Installation' ? 'selected' : '' }}>Pending Site Installation</option>
-<option value="Pending ST License Application" {{ old('project_status') == 'Pending ST License Application' ? 'selected' : '' }}>Pending ST License Application</option>
-<option value="Pending ST License Approval" {{ old('project_status') == 'Pending ST License Approval' ? 'selected' : '' }}>Pending ST License Approval</option>
+<option value="">Select EPCC Stage</option>
+@foreach($workflowStages as $stageKey => $stageInfo)
+<option value="{{ $stageKey }}" {{ old('project_status', 'Client Enquiry') == $stageKey ? 'selected' : '' }}>{{ $stageInfo['label'] }}</option>
+@endforeach
 </select>
 </div>
 </div>
@@ -227,20 +224,21 @@ $installers = ['AR Berkat','Ax Electro','Bioserasi','Completed','PJ Plus','Other
 </div>
 <div>
 <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
-<input type="text" name="payment_method" value="{{ old('payment_method') }}" class="w-full rounded-button p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary">
+<select name="payment_method" class="w-full rounded-button p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary">
+                    <option value="">Select Payment Method</option>
+                    <option value="Cash" {{ old('payment_method') == 'Cash' ? 'selected' : '' }}>Cash</option>
+                    <option value="Bank Transfer" {{ old('payment_method') == 'Bank Transfer' ? 'selected' : '' }}>Bank Transfer</option>
+                    <option value="Cheque" {{ old('payment_method') == 'Cheque' ? 'selected' : '' }}>Cheque</option>
+                    <option value="Loan" {{ old('payment_method') == 'Loan' ? 'selected' : '' }}>Loan</option>
+                    <option value="Credit Card" {{ old('payment_method') == 'Credit Card' ? 'selected' : '' }}>Credit Card</option>
+                    <option value="Other" {{ old('payment_method') == 'Other' ? 'selected' : '' }}>Other</option>
+                </select>
 </div>
 <div>
 <label class="block text-sm font-medium text-gray-700 mb-1">Contract Type</label>
 <input type="text" name="contract_type" value="{{ old('contract_type') }}" class="w-full rounded-button p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary">
 </div>
-<div>
-<label class="block text-sm font-medium text-gray-700 mb-1">Invoice Status</label>
-<input type="text" name="invoice_status" value="{{ old('invoice_status') }}" class="w-full rounded-button p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary">
-</div>
-<div>
-<label class="block text-sm font-medium text-gray-700 mb-1">Payment Status</label>
-<input type="text" name="payment_status" value="{{ old('payment_status') }}" class="w-full rounded-button p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary">
-</div>
+            <!-- Note: Invoice Status and Payment Status are calculated from the payments table -->
 <div>
 <label class="block text-sm font-medium text-gray-700 mb-1">Procurement Status</label>
 <input type="text" name="procurement_status" value="{{ old('procurement_status') }}" class="w-full rounded-button p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary">
@@ -293,6 +291,15 @@ $installers = ['AR Berkat','Ax Electro','Bioserasi','Completed','PJ Plus','Other
 </main>
 
 <script>
+// Initialize Select2 for client dropdown
+$(document).ready(function() {
+    $('#clientSelect').select2({
+        placeholder: 'Search and select a client',
+        allowClear: true,
+        width: '100%'
+    });
+});
+
 function toggleInstallerOther(val) {
     const wrap = document.getElementById('installerOtherWrapper');
     if (!wrap) return;

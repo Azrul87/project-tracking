@@ -31,7 +31,7 @@ class Payment extends Model
     /**
      * Get the project that owns this payment.
      */
-    public function project(): BelongsTo
+    public function project(): Belong
     {
         return $this->belongsTo(Project::class, 'project_id', 'project_id');
     }

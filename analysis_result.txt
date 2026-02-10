@@ -1,0 +1,62 @@
+Document Analysis: ECN Project Tracker No Formula 2.xlsx
+
+Sheet: Dashboard
+----------------------------------------
+No clear header found in first 5 rows.
+
+Sheet: Pivot
+----------------------------------------
+Potential Header (Row 1): Business | Metric | Year | Value | Year | (All) | Year | (All)
+Sample Data (Row 2): Residential (PV System) | System Capacity | 2023 | 313.3
+
+Sheet: Master Data
+----------------------------------------
+Potential Header (Row 4): Project No | Client Name | Closed Date | Sales PIC | Category | Scheme | Location | PV System Capacity (kWp) | EV Charger Capacity | BESS Capacity | Project Value (RM) | VO (RM) | Payment Method | Outright/PPA | Module | Module Quantity | Inverter | Inverter Warranty | I/C Number | Installation Address | Phone Number | Email Address | Insurance Warranty | DLP Period | O&M | Partner | Services Exclusion | Additional Remark
+Sample Data (Row 5): 2303005 | Wong Kim Mei | 45021 | Simon | R-PV | NEM | Selangor | 8.05 | - | 32000 | Self finance | Outright | Astronergy 575Wp | 14 | Solinteg MHT-8K-25 hybrid | 731013-10-5784 | No. 24, Jalan Seri Muka 36/27A, Taman Menegun Indah, 41000 Klang, Selangor. | 016-335 4884 | wongkimmei73@gmail.com | 5 years | 1 year
+
+Sheet: Data
+----------------------------------------
+Potential Header (Row 2): Sales PIC | Category | Scheme | Payment Method | Location | Finance | DLP | O&M | Insurance
+Sample Data (Row 3): Chean Bang | R-PV | NEM | Cash | #VALUE! | Outright | 1 year | N/A | N/A
+
+Sheet: ECN Project Tracker
+----------------------------------------
+Potential Header (Row 3): TNB-CAS | SEDA | TNB (NEM Meter Change )
+Sample Data (Row 4): Project No | Client Name | Location | Sales PIC | Category | Scheme | System Capacity | Module | Module Quantity | Inverter | Project Status | Payment Status | CAS Application | CAS Approval | NEM Quota Submission | NEM Quota Approval | NEM Quota Status | NEMCD | Site Survey | Material Readiness | RSA Result | Engineering Design | Installer | Installation Date | NEM Meter Change/ Contract Submission | TNB Portal Status | Status Date | Meter Change Payment | NEM Meter Change | NEM Welcome Letter | NEM Term End Date | ST License Application | ST License Approval | GITA Application | GITA Approval | Close to Instaallation
+
+Sheet: In Progress
+----------------------------------------
+Potential Header (Row 3): Item | To Be Done (X) | In Progress (Y) | Completed (Z)
+
+Warning: Array to string conversion in C:\xampp\htdocs\project_tracking\project\analyze_excel_structure.php on line 42
+Sample Data (Row 4): SEDA NEMCD | 368 | Array | 229
+
+Sheet: Finance Tracker
+----------------------------------------
+Potential Header (Row 2): 1st Payment | 2nd Payment | 3rd Payment | 4th Payment | 5th Payment | VO Payment
+Sample Data (Row 3): Project No | Client Name | Project Value | VO | Sales PIC | Category | Payment Type | Invoice Status | Payment Status | Total Invoiced | Total Paid | 1st Invoice Date | Invoiced Amount | 1st Payment Date | 1st Payment | 2nd Invoice Date | Invoice Amount | 2nd Payment Date | Payment Received | 3rd Invoice Date | Invoice Amount | 3rd Payment Date | Payment Received | 4th Invoice Date | Invoice Amount | 4th Payment Date | Payment Received | 5th Invoice Date | Invoice Amount | 5th Payment Date | Payment Received | VO Invoiced Date | VO Invoice Amount | VO Payment Date | VO Payment
+
+Sheet: Insurance Tracker
+----------------------------------------
+Potential Header (Row 2): 1st Year | 2nd Year | 3rd Year | 4th Year
+Sample Data (Row 3): Project No | Client Name | I/C | Installation Address | Phone Number | Email | Project Value | Category | System Capacity | Insurance Warranty | Insurance Provider | Policy Number | Date of Policy | Insurance Provider | Policy Number | Date of Policy | Insurance Provider | Policy Number | Date of Policy | Insurance Provider | Policy Number | Date of Policy
+
+Sheet: Material Input
+----------------------------------------
+Potential Header (Row 1): Client Name | Insultec Duragate | Residential | Roof Type
+Sample Data (Row 2): Category | C&I | C&I | Tiles Roof
+
+Sheet: Material Input (2)
+----------------------------------------
+Potential Header (Row 1): Client Name | Insultec Duragate | Residential | Roof Type
+Sample Data (Row 2): Category | C&I | C&I | Tiles Roof
+
+Sheet: Material List
+----------------------------------------
+No clear header found in first 5 rows.
+
+Sheet: Warehouse Stock
+----------------------------------------
+Potential Header (Row 2): Material | Total Amount | Delivered | Current Need | Dec Module Count
+Sample Data (Row 3): Astronergy 575Wp
+

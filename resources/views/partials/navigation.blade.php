@@ -53,32 +53,18 @@
 </div>
 <div class="flex items-center justify-between px-6 py-3">
 <div class="flex items-center space-x-1">
-<a href="/overview" class="px-4 py-2 text-sm font-medium {{ request()->routeIs('overview') || request()->is('overview') ? 'text-primary bg-indigo-50' : 'text-gray-700 hover:bg-gray-100' }} rounded-button transition-colors">Overview</a>
+
 <a href="/dashboard" class="px-4 py-2 text-sm font-medium {{ request()->routeIs('dashboard') || request()->is('dashboard') ? 'text-primary bg-indigo-50' : 'text-gray-700 hover:bg-gray-100' }} rounded-button transition-colors">Dashboard</a>
+<a href="{{ route('clients.index') }}" class="px-4 py-2 text-sm font-medium {{ request()->routeIs('clients.*') || request()->is('clients*') ? 'text-primary bg-indigo-50' : 'text-gray-700 hover:bg-gray-100' }} rounded-button transition-colors">Clients</a>
 <a href="/projects" class="px-4 py-2 text-sm font-medium {{ request()->routeIs('projects.*') || request()->is('projects*') ? 'text-primary bg-indigo-50' : 'text-gray-700 hover:bg-gray-100' }} rounded-button transition-colors">Projects</a>
 <a href="/finance-tracker" class="px-4 py-2 text-sm font-medium {{ request()->is('finance-tracker') ? 'text-primary bg-indigo-50' : 'text-gray-700 hover:bg-gray-100' }} rounded-button transition-colors">Finance Tracker</a>
 <a href="/finance-overview" class="px-4 py-2 text-sm font-medium {{ request()->is('finance-overview') ? 'text-primary bg-indigo-50' : 'text-gray-700 hover:bg-gray-100' }} rounded-button transition-colors">Finance Overview</a>
 <a href="/insurance-tracker" class="px-4 py-2 text-sm font-medium {{ request()->is('insurance-tracker') ? 'text-primary bg-indigo-50' : 'text-gray-700 hover:bg-gray-100' }} rounded-button transition-colors">Insurance Tracker</a>
-<button class="px-4 py-2 text-sm font-medium text-gray-700 rounded-button hover:bg-gray-100 transition-colors">Tasks</button>
-<button class="px-4 py-2 text-sm font-medium text-gray-700 rounded-button hover:bg-gray-100 transition-colors">Calendar</button>
-<button class="px-4 py-2 text-sm font-medium text-gray-700 rounded-button hover:bg-gray-100 transition-colors">Files</button>
-<button class="px-4 py-2 text-sm font-medium text-gray-700 rounded-button hover:bg-gray-100 transition-colors">Reports</button>
-<a href="/status-summary" class="px-4 py-2 text-sm font-medium {{ request()->routeIs('status-summary.*') || request()->is('status-summary*') ? 'text-primary bg-indigo-50' : 'text-gray-700 hover:bg-gray-100' }} rounded-button transition-colors">Status Summary</a>
+<a href="{{ route('inventory') }}" class="px-4 py-2 text-sm font-medium {{ request()->routeIs('inventory') || request()->is('inventory*') ? 'text-primary bg-indigo-50' : 'text-gray-700 hover:bg-gray-100' }} rounded-button transition-colors">Materials</a>
+<a href="{{ route('data-import.index') }}" class="px-4 py-2 text-sm font-medium {{ request()->routeIs('data-import.*') || request()->is('data-import*') ? 'text-primary bg-indigo-50' : 'text-gray-700 hover:bg-gray-100' }} rounded-button transition-colors">Data Import</a>
+
 </div>
-<div class="flex items-center space-x-3">
-<button class="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 rounded-button hover:bg-gray-100 transition-colors whitespace-nowrap">
-<div class="w-4 h-4 flex items-center justify-center">
-<i class="ri-filter-3-line"></i>
-</div>
-<span>Filter</span>
-</button>
-<button class="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-white bg-primary rounded-button hover:bg-indigo-600 transition-colors whitespace-nowrap">
-<div class="w-4 h-4 flex items-center justify-center">
-<i class="ri-add-line"></i>
-</div>
-<span>Add Task</span>
-</button>
-</div>
+
 </div>
 </header>
 

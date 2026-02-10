@@ -6,7 +6,6 @@ use App\Models\Project;
 use App\Models\Payment;
 use App\Models\InsurancePolicy;
 use App\Models\Item;
-use App\Models\ProjectItem;
 use App\Models\Client;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -233,6 +232,9 @@ class DataImportController extends Controller
             // Step 4: Import Project Items (depends on projects and items)
             if (in_array('Material List', $request->sheets)) {
                 $results['project_items'] = $this->importProjectItems($spreadsheet, 'Material List');
+                
+                // Sync inventory items after importing project materials
+                \Illuminate\Support\Facades\Artisan::call('inventory:sync');
             }
 
             DB::commit();
@@ -331,17 +333,87 @@ class DataImportController extends Controller
 
             try {
                 $data = $this->mapRowToArray($headers, $row, [
+                    // Basic Info
                     'project_id' => ['project no', 'project id', 'project_id', 'project_no', 'project number', 'project', 'no', 'id'],
-                    'client_name' => ['client', 'client name', 'client_name', 'clientname', 'client name'],
+                    'client_name' => ['client', 'client name', 'client_name', 'clientname'],
                     'sales_pic' => ['sales pic', 'sales_pic', 'sales person', 'salespic', 'sales person in charge', 'sales', 'pic'],
-                    'name' => ['project name', 'name', 'project_name', 'projectname', 'project'],
+                    'name' => ['project name', 'name', 'project_name', 'projectname'],
                     'category' => ['category'],
                     'scheme' => ['scheme'],
                     'location' => ['location'],
-                    'pv_system_capacity_kwp' => ['pv system capacity', 'capacity', 'pv_capacity', 'system capacity', 'pv capacity', 'system', 'kwp'],
-                    'project_value_rm' => ['project value', 'project_value', 'value', 'project value (rm)', 'value (rm)', 'rm'],
-                    'vo_rm' => ['vo', 'variation order', 'vo_rm', 'vo (rm)', 'variation'],
-                    'status' => ['status'],
+                    'status' => ['status', 'general status', 'project status', 'current status', 'stage'],
+                    
+                    // Technical Specifications
+                    'pv_system_capacity_kwp' => ['pv system capacity', 'capacity', 'pv_capacity', 'system capacity', 'pv capacity (kwp)', 'kwp'],
+                    'ev_charger_capacity' => ['ev charger capacity', 'ev charger', 'ev capacity'],
+                    'bess_capacity' => ['bess capacity', 'bess', 'battery capacity'],
+                    'module' => ['module', 'solar module', 'pv module', 'panel'],
+                    'module_quantity' => ['module quantity', 'module qty', 'qty', 'quantity', 'no of module'],
+                    'inverter' => ['inverter', 'inverter model'],
+                    'installer' => ['installer', 'subcon'],
+                    'site_survey_date' => ['site survey date', 'site survey', 'survey date'],
+                    'installation_date' => ['installation date', 'install date'],
+                    
+                    // Financial
+                    'project_value_rm' => ['project value', 'project_value', 'value', 'project value (rm)', 'value (rm)', 'contract value'],
+                    'vo_rm' => ['vo', 'variation order', 'vo_rm', 'vo (rm)', 'vo amount'],
+                    'payment_method' => ['payment method', 'payment type'],
+                    'contract_type' => ['contract type', 'contract'],
+                    // Legacy fields - mapped from Excel but no longer stored in projects table
+                    'invoice_status' => ['invoice status'],
+                    'payment_status' => ['payment status'],
+                    'procurement_status' => ['procurement status', 'procurement'],
+                    'closed_date' => ['closed date', 'project closed date'],
+                    
+                    // Operations & O&M
+                    'insurance_warranty' => ['insurance/warranty', 'insurance', 'warranty'],
+                    'dlp_period' => ['dlp period', 'dlp', 'defect liability period'],
+                    'partner' => ['partner', 'partnership'],
+                    'om_status' => ['o&m status', 'om status', 'o&m'],
+                    'om_details' => ['om details', 'o&m details'],
+                    'services_exclusion' => ['services exclusion', 'exclusion'],
+                    'additional_remark' => ['additional remark', 'remark', 'remarks', 'notes'],
+                    
+                    // NEM Application Workflow
+                    'nem_quota_submission_date' => ['nem quota submission', 'nem submission', 'quota submission', 'nem application submission'],
+                    'nem_quota_approval_date' => ['nem quota approval', 'quota approval', 'nem approval'],
+                    'nem_quota_status' => ['nem quota status', 'quota status', 'nem status'],
+                    'st_license_application_date' => ['st license application', 'st application'],
+                    'st_license_approval_date' => ['st license approval', 'st approval'],
+                    'nemcd_obtained_date' => ['nemcd obtained', 'nemcd', 'nemcd date'],
+                    'nem_meter_change_date' => ['nem meter change', 'meter change', 'nem meter'],
+                    
+                    // Workflow - EPCC Stages
+                    'client_enquiry_date' => ['client enquiry', 'enquiry date', 'enquiry'],
+                    'proposal_preparation_date' => ['proposal preparation', 'proposal prep'],
+                    'proposal_submission_date' => ['proposal submission', 'proposal submit'],
+                    'proposal_acceptance_date' => ['proposal acceptance', 'proposal accept'],
+                    'letter_of_award_date' => ['letter of award', 'loa', 'award date'],
+                    'first_invoice_date' => ['1st invoice', '1st invoice date', 'first invoice'],
+                    'first_invoice_payment_date' => ['1st invoice payment', '1st payment', 'first payment'],
+                    'site_study_date' => ['site study', 'site study date'],
+                    'project_planning_date' => ['project planning', 'planning date'],
+                    'second_invoice_date' => ['2nd invoice', '2nd invoice date', 'second invoice'],
+                    'second_invoice_payment_date' => ['2nd invoice payment', '2nd payment', 'second payment'],
+                    'material_procurement_date' => ['material procurement', 'procurement date'],
+                    'subcon_appointment_date' => ['subcon appointment', 'subcon date'],
+                    'material_delivery_date' => ['material delivery', 'delivery date'],
+                    'site_mobilization_date' => ['site mobilization', 'mobilization'],
+                    'system_testing_date' => ['system testing', 'testing date'],
+                    'system_commissioning_date' => ['system commissioning', 'commissioning'],
+                    'last_invoice_date' => ['last invoice', 'last invoice date', 'final invoice'],
+                    'last_invoice_payment_date' => ['last invoice payment', 'last payment', 'final payment'],
+                    'system_energize_date' => ['system energize', 'energize date', 'energized'],
+                    'system_training_date' => ['system training', 'training date'],
+                    'project_handover_to_client_date' => ['project handover to client', 'handover to client', 'client handover'],
+                    'project_closure_date' => ['project closure', 'closure date'],
+                    'handover_to_om_date' => ['handover to o&m', 'handover to om', 'om handover'],
+                    
+                    // O&M Workflow
+                    'om_site_study_date' => ['o&m site study', 'om site study'],
+                    'om_schedule_prepared_date' => ['o&m schedule prepared', 'om schedule prepared'],
+                    'om_start_date' => ['o&m start date', 'om start date', 'o&m start'],
+                    'om_end_date' => ['o&m end date', 'om end date', 'o&m end'],
                 ]);
                 
                 // Debug: Log first row mapping
@@ -382,11 +454,54 @@ class DataImportController extends Controller
                 // Use cleaned project ID
                 $data['project_id'] = $projectId;
 
-                // Find or create client
-                $client = Client::firstOrCreate(
-                    ['client_id' => $this->generateIdFromName($data['client_name'] ?? 'Unknown', 'CLI')],
-                    ['client_name' => $data['client_name'] ?? 'Unknown']
-                );
+                // Extract client-specific data from the row
+                $clientData = $this->mapRowToArray($headers, $row, [
+                    'client_phone' => ['client phone', 'phone', 'phone number', 'client contact', 'contact number'],
+                    'client_email' => ['client email', 'email', 'email address'],
+                    'client_ic' => ['ic number', 'ic', 'nric', 'passport', 'ic/passport'],
+                    'client_address' => ['installation address', 'address', 'site address', 'location address'],
+                    'client_payment_method' => ['payment method', 'payment type', 'payment'],
+                    'client_contract_type' => ['contract type', 'outright/ppa', 'ppa/outright', 'contract'],
+                ]);
+                
+                // Determine contract type from payment method or dedicated column
+                $contractType = null;
+                if (!empty($clientData['client_contract_type'])) {
+                    $contractType = $clientData['client_contract_type'];
+                    // Normalize the value
+                    if (stripos($contractType, 'outright') !== false) {
+                        $contractType = 'Outright';
+                    } elseif (stripos($contractType, 'ppa') !== false) {
+                        $contractType = 'PPA';
+                    }
+                }
+                
+                // Find or create client with all available data
+                $clientId = $this->generateIdFromName($data['client_name'] ?? 'Unknown', 'CLI');
+                $client = Client::firstOrNew(['client_id' => $clientId]);
+                
+                // Update client information (only if not empty, to preserve existing data)
+                $client->client_name = $data['client_name'] ?? $client->client_name ?? 'Unknown';
+                if (!empty($clientData['client_ic'])) {
+                    $client->ic_number = $clientData['client_ic'];
+                }
+                if (!empty($clientData['client_address'])) {
+                    $client->installation_address = $clientData['client_address'];
+                }
+                if (!empty($clientData['client_phone'])) {
+                    $client->phone_number = $clientData['client_phone'];
+                }
+                if (!empty($clientData['client_email'])) {
+                    $client->email_address = $clientData['client_email'];
+                }
+                if (!empty($clientData['client_payment_method'])) {
+                    $client->payment_method = $clientData['client_payment_method'];
+                }
+                if (!empty($contractType)) {
+                    $client->contract_type = $contractType;
+                }
+                
+                $client->save();
 
                 // Find or create sales PIC (user)
                 $salesPicName = $data['sales_pic'] ?? 'Unknown';
@@ -427,21 +542,165 @@ class DataImportController extends Controller
 
                 // Create or update project (handles duplicates - updates if exists)
                 try {
-                    $project = Project::updateOrCreate(
-                        ['project_id' => $data['project_id']],
-                        [
-                            'client_id' => $client->client_id,
-                            'sales_pic_id' => $salesPic->user_id,
-                            'name' => $data['name'] ?? null,
-                            'category' => $data['category'] ?? null,
-                            'scheme' => $data['scheme'] ?? null,
-                            'location' => $data['location'] ?? null,
-                            'pv_system_capacity_kwp' => $this->parseDecimal($data['pv_system_capacity_kwp'] ?? null),
-                            'project_value_rm' => $this->parseDecimal($data['project_value_rm'] ?? null),
-                            'vo_rm' => $this->parseDecimal($data['vo_rm'] ?? null),
-                            'status' => $data['status'] ?? 'Planning',
-                        ]
-                    );
+                    // Find existing project or create new one
+                    $project = Project::firstOrNew(['project_id' => $data['project_id']]);
+                    
+                    // Only update fields that have actual values (not null/empty)
+                    // This preserves existing data when importing partial updates
+                    
+                    // Basic Info - Always update these core fields
+                    $project->client_id = $client->client_id;
+                    $project->sales_pic_id = $salesPic->user_id;
+                    
+                    // Only update if new value exists
+                    if (!empty($data['name'])) {
+                        $project->name = $data['name'];
+                    }
+                    if (!empty($data['category'])) {
+                        $project->category = $data['category'];
+                    }
+                    if (!empty($data['scheme'])) {
+                        $project->scheme = $data['scheme'];
+                    }
+                    if (!empty($data['location'])) {
+                        $project->location = $data['location'];
+                    }
+                    if (!empty($data['status'])) {
+                        $project->status = $data['status'];
+                    } elseif (!$project->exists) {
+                        // Only set default 'Planning' for new projects
+                        $project->status = 'Planning';
+                    }
+                    
+                    // Technical Specifications - Only update if value exists
+                    $pvCapacity = $this->parseDecimal($data['pv_system_capacity_kwp'] ?? null);
+                    if ($pvCapacity !== null) {
+                        $project->pv_system_capacity_kwp = $pvCapacity;
+                    }
+                    if (!empty($data['ev_charger_capacity'])) {
+                        $project->ev_charger_capacity = $data['ev_charger_capacity'];
+                    }
+                    if (!empty($data['bess_capacity'])) {
+                        $project->bess_capacity = $data['bess_capacity'];
+                    }
+                    if (!empty($data['module'])) {
+                        $project->module = $data['module'];
+                    }
+                    $moduleQty = $this->parseInteger($data['module_quantity'] ?? null);
+                    if ($moduleQty !== null) {
+                        $project->module_quantity = $moduleQty;
+                    }
+                    if (!empty($data['inverter'])) {
+                        $project->inverter = $data['inverter'];
+                    }
+                    if (!empty($data['installer'])) {
+                        $project->installer = $data['installer'];
+                    }
+                    
+                    // Financial - Only update if value exists
+                    $projectValue = $this->parseDecimal($data['project_value_rm'] ?? null);
+                    if ($projectValue !== null) {
+                        $project->project_value_rm = $projectValue;
+                    }
+                    $voValue = $this->parseDecimal($data['vo_rm'] ?? null);
+                    if ($voValue !== null) {
+                        $project->vo_rm = $voValue;
+                    }
+                    if (!empty($data['payment_method'])) {
+                        $project->payment_method = $data['payment_method'];
+                    }
+                    if (!empty($data['contract_type'])) {
+                        $project->contract_type = $data['contract_type'];
+                    }
+                    // Note: invoice_status and payment_status are no longer stored in projects table
+                    // They are calculated from the payments table
+                    if (!empty($data['procurement_status'])) {
+                        $project->procurement_status = $data['procurement_status'];
+                    }
+                    
+                    // Operations & O&M - Only update if value exists
+                    if (!empty($data['insurance_warranty'])) {
+                        $project->insurance_warranty = $data['insurance_warranty'];
+                    }
+                    if (!empty($data['dlp_period'])) {
+                        $project->dlp_period = $data['dlp_period'];
+                    }
+                    if (!empty($data['partner'])) {
+                        $project->partner = $data['partner'];
+                    }
+                    // om_status is now handled in workflow stages table (see below)
+                    if (!empty($data['om_details'])) {
+                        $project->om_details = $data['om_details'];
+                    }
+                    if (!empty($data['services_exclusion'])) {
+                        $project->services_exclusion = $data['services_exclusion'];
+                    }
+                    if (!empty($data['additional_remark'])) {
+                        $project->additional_remark = $data['additional_remark'];
+                    }
+                    
+                    // Dates - Only update if value exists
+                    $this->updateDateField($project, 'site_survey_date', $data['site_survey_date'] ?? null);
+                    $this->updateDateField($project, 'installation_date', $data['installation_date'] ?? null);
+                    $this->updateDateField($project, 'closed_date', $data['closed_date'] ?? null);
+                    
+                    // Workflow - EPCC Stages - Only update if value exists
+                    $this->updateDateField($project, 'client_enquiry_date', $data['client_enquiry_date'] ?? null);
+                    $this->updateDateField($project, 'proposal_preparation_date', $data['proposal_preparation_date'] ?? null);
+                    $this->updateDateField($project, 'proposal_submission_date', $data['proposal_submission_date'] ?? null);
+                    $this->updateDateField($project, 'proposal_acceptance_date', $data['proposal_acceptance_date'] ?? null);
+                    $this->updateDateField($project, 'letter_of_award_date', $data['letter_of_award_date'] ?? null);
+                    $this->updateDateField($project, 'first_invoice_date', $data['first_invoice_date'] ?? null);
+                    $this->updateDateField($project, 'first_invoice_payment_date', $data['first_invoice_payment_date'] ?? null);
+                    $this->updateDateField($project, 'site_study_date', $data['site_study_date'] ?? null);
+                    $this->updateDateField($project, 'nem_application_submission_date', $data['nem_quota_submission_date'] ?? null);
+                    $this->updateDateField($project, 'project_planning_date', $data['project_planning_date'] ?? null);
+                    $this->updateDateField($project, 'nem_approval_date', $data['nem_quota_approval_date'] ?? null);
+                    $this->updateDateField($project, 'st_license_application_date', $data['st_license_application_date'] ?? null);
+                    $this->updateDateField($project, 'second_invoice_date', $data['second_invoice_date'] ?? null);
+                    $this->updateDateField($project, 'second_invoice_payment_date', $data['second_invoice_payment_date'] ?? null);
+                    $this->updateDateField($project, 'material_procurement_date', $data['material_procurement_date'] ?? null);
+                    $this->updateDateField($project, 'subcon_appointment_date', $data['subcon_appointment_date'] ?? null);
+                    $this->updateDateField($project, 'material_delivery_date', $data['material_delivery_date'] ?? null);
+                    $this->updateDateField($project, 'site_mobilization_date', $data['site_mobilization_date'] ?? null);
+                    $this->updateDateField($project, 'st_license_approval_date', $data['st_license_approval_date'] ?? null);
+                    $this->updateDateField($project, 'system_testing_date', $data['system_testing_date'] ?? null);
+                    $this->updateDateField($project, 'system_commissioning_date', $data['system_commissioning_date'] ?? null);
+                    $this->updateDateField($project, 'nem_meter_change_date', $data['nem_meter_change_date'] ?? null);
+                    $this->updateDateField($project, 'last_invoice_date', $data['last_invoice_date'] ?? null);
+                    $this->updateDateField($project, 'last_invoice_payment_date', $data['last_invoice_payment_date'] ?? null);
+                    $this->updateDateField($project, 'system_energize_date', $data['system_energize_date'] ?? null);
+                    $this->updateDateField($project, 'nemcd_obtained_date', $data['nemcd_obtained_date'] ?? null);
+                    $this->updateDateField($project, 'system_training_date', $data['system_training_date'] ?? null);
+                    $this->updateDateField($project, 'project_handover_to_client_date', $data['project_handover_to_client_date'] ?? null);
+                    $this->updateDateField($project, 'project_closure_date', $data['project_closure_date'] ?? null);
+                    $this->updateDateField($project, 'handover_to_om_date', $data['handover_to_om_date'] ?? null);
+                    
+                    // O&M Workflow - Only update if value exists
+                    $this->updateDateField($project, 'om_site_study_date', $data['om_site_study_date'] ?? null);
+                    $this->updateDateField($project, 'om_schedule_prepared_date', $data['om_schedule_prepared_date'] ?? null);
+                    $this->updateDateField($project, 'om_start_date', $data['om_start_date'] ?? null);
+                    $this->updateDateField($project, 'om_end_date', $data['om_end_date'] ?? null);
+                    
+                    // Handle workflow_stage and om_status
+                    $workflowData = [];
+                    if (!empty($data['workflow_stage'])) {
+                        $workflowData['workflow_stage'] = $data['workflow_stage'];
+                    }
+                    if (!empty($data['om_status'])) {
+                        $workflowData['om_status'] = $data['om_status'];
+                    }
+                    
+                    // Update or create workflow stage record
+                    if (!empty($workflowData)) {
+                        \App\Models\ProjectWorkflowStage::updateOrCreate(
+                            ['project_id' => $project->project_id],
+                            $workflowData
+                        );
+                    }
+                    
+                    // Save the project
+                    $project->save();
 
                     $imported++;
                 } catch (\Exception $e) {
@@ -543,12 +802,9 @@ class DataImportController extends Controller
                 }
 
                 // Update project-level finance data
+                // Note: invoice_status, payment_status, total_invoiced, and total_paid are now calculated from payments table
                 $project->update([
                     'payment_type' => $row[$colMap['payment type'] ?? -1] ?? null,
-                    'invoice_status' => $row[$colMap['invoice status'] ?? -1] ?? null,
-                    'payment_status' => $row[$colMap['payment status'] ?? -1] ?? null,
-                    'total_invoiced' => $this->parseDecimal($row[$colMap['total invoiced'] ?? -1] ?? null),
-                    'total_paid' => $this->parseDecimal($row[$colMap['total paid'] ?? -1] ?? null),
                 ]);
 
                 // Process individual payment phases
@@ -875,7 +1131,10 @@ class DataImportController extends Controller
     }
 
     /**
-     * Import project items from Material List sheet
+     * Import project material list from 'Material List' sheet
+     * This updates:
+     * 1. Project fields (Module, Inverter, Roof Type) in 'projects' table
+     * 2. Material quantities in 'project_materials' table
      */
     private function importProjectItems($spreadsheet, $sheetName)
     {
@@ -889,33 +1148,40 @@ class DataImportController extends Controller
             return ['imported' => 0, 'errors' => ['Sheet is empty']];
         }
 
-        // Try to find header row
+        // Try to find header row (looking for Client Name, System Capacity etc)
         $headerRowIndex = 0;
         $headers = [];
         
-        if (!empty($rows[0])) {
-            $testHeaders = array_map('strtolower', array_filter(array_map('trim', array_values($rows[0]))));
-            if (!empty($testHeaders) && $this->isHeaderRow($testHeaders)) {
-                $headerRowIndex = 0;
-                $headers = $testHeaders;
+        // Scan first 15 rows for headers
+        for ($i = 0; $i < min(15, count($rows)); $i++) {
+            $rowHeaders = array_map('strtolower', array_filter(array_map('trim', array_values($rows[$i]))));
+            
+            // Check for key columns that identify the Material List header
+            $matches = 0;
+            $keywords = ['client name', 'system capacity', 'module', 'inverter', 'roof type', 'mid clamp'];
+            
+            foreach ($keywords as $keyword) {
+                if (in_array($keyword, $rowHeaders)) $matches++;
+            }
+            
+            if ($matches >= 3) {
+                $headerRowIndex = $i;
+                $headers = $rowHeaders;
+                break;
             }
         }
         
-        if (empty($headers) && !empty($rows[1])) {
-            $testHeaders = array_map('strtolower', array_filter(array_map('trim', array_values($rows[1]))));
-            if (!empty($testHeaders) && $this->isHeaderRow($testHeaders)) {
-                $headerRowIndex = 1;
-                $headers = $testHeaders;
+        if (empty($headers)) {
+            // Fallback to row 10 (index 10, which is row 11 in Excel) which usually contains headers in this file format
+            if (isset($rows[10])) {
+                $headers = array_map('strtolower', array_filter(array_map('trim', array_values($rows[10]))));
+                $headerRowIndex = 10;
+            } else {
+                return ['imported' => 0, 'errors' => ['Could not find header row']];
             }
-        }
-        
-        if (empty($headers) && !empty($rows[0])) {
-            $headers = array_map('strtolower', array_filter(array_map('trim', array_values($rows[0]))));
-            $headerRowIndex = 0;
         }
         
         $dataRows = array_slice($rows, $headerRowIndex + 1);
-        
         $imported = 0;
         $errors = [];
 
@@ -926,42 +1192,117 @@ class DataImportController extends Controller
             }
 
             try {
+                // Map columns to fields
                 $data = $this->mapRowToArray($headers, $row, [
-                    'project_id' => ['project no', 'project id', 'project_id', 'project number'],
-                    'item_id' => ['item id', 'item_id', 'item name'],
-                    'quantity' => ['quantity', 'qty', 'qty required'],
+                    // Identification
+                    'client_name' => ['client name', 'client'],
+                    
+                    // Project Technical Specs (Update projects table)
+                    'procurement_status' => ['procurement status'],
+                    'pv_system_capacity_kwp' => ['system capacity', 'capacity'],
+                    'category' => ['category'],
+                    'module' => ['module'],
+                    'module_quantity' => ['module quantity', 'qty'],
+                    'inverter' => ['inverter'],
+                    'roof_type' => ['roof type'],
+                    
+                    // Materials (project_materials table)
+                    'klip_lok_clamp' => ['klip lok clamp', 'klip lok'],
+                    'l_foot' => ['l-foot', 'l foot'],
+                    'tile_hook' => ['tile hook'],
+                    'rail_2_6m' => ['2.6m rail'],
+                    'rail_5_3m' => ['5.3m rail'],
+                    'rail_4_7m' => ['4.7m rail'],
+                    'rail_3_6m' => ['3.6m rail'],
+                    'splicer' => ['splicer'],
+                    'mid_clamp' => ['mid clamp'],
+                    'end_clamp' => ['end clamp'],
+                    'grounding_clip' => ['grounding clip'],
+                    'grounding_lug' => ['grounding lug'],
+                    'dongle' => ['dongle'],
+                    'precast_concrete_block' => ['precast concrete block', 'concrete block'],
+                    'dc_cable_4mmsq' => ['dc cable (4mmsq)', 'dc cable 4mm'],
+                    'dc_cable_6mmsq' => ['dc cable (6mmsq)', 'dc cable 6mm'],
+                    'pv_connector_male' => ['pv connctor (male)', 'pv connector (male)', 'male connector'],
+                    'pv_connector_female' => ['pv connctor (female)', 'pv connector (female)', 'female connector'],
+                    'isolator_switch_3p' => ['3p isolator switch', 'isolator switch'],
+                    'kwh_meter_1phase' => ['1-phase kwh meter', '1 phase meter'],
+                    'kwh_meter_3phase' => ['3-phase kwh meter', '3 phase meter'],
+                    'pv_ac_db' => ['pv ac db', 'ac db'],
+                    'data_logger' => ['data logger'],
+                    'weather_station' => ['weather station'],
+                    'bess' => ['bess'],
+                    'ev_charger' => ['ev charger'],
+                    'optimiser' => ['optimiser'],
+                    'remark' => ['remark'],
                 ]);
 
-                if (empty($data['project_id']) || empty($data['item_id'])) {
-                    $errors[] = "Row " . ($rowNum + $headerRowIndex + 2) . ": Missing project_id or item_id";
-                    continue;
+                $clientName = $data['client_name'] ?? null;
+                if (empty($clientName)) {
+                    continue; // Skip if no client name
                 }
 
-                $project = Project::find($data['project_id']);
+                // Find project by client name (since we might not have project ID in this sheet)
+                // We typically need to associate this with an existing project.
+                // Strategy: Find project where client name matches (via client relationship)
+                
+                $project = Project::whereHas('client', function($q) use ($clientName) {
+                    $q->where('client_name', $clientName)
+                      ->orWhere('client_name', 'like', '%' . $clientName . '%');
+                })->first();
+
+                // If not found by client name only, check if there's a project capacity match too for better accuracy
+                if (!$project && !empty($data['pv_system_capacity_kwp'])) {
+                    $capacity = $this->parseDecimal($data['pv_system_capacity_kwp']);
+                    $project = Project::where('pv_system_capacity_kwp', $capacity)->first();
+                }
+
                 if (!$project) {
-                    $errors[] = "Row {$rowNum}: Project {$data['project_id']} not found";
+                    $errors[] = "Row " . ($rowNum + $headerRowIndex + 2) . ": Project for client '{$clientName}' not found";
                     continue;
                 }
 
-                // Try to find item by ID or name
-                $item = Item::where('item_id', $data['item_id'])
-                    ->orWhere('name', $data['item_id'])
-                    ->first();
-
-                if (!$item) {
-                    $errors[] = "Row {$rowNum}: Item {$data['item_id']} not found";
-                    continue;
+                // 1. Update Project fields
+                $projectUpdateData = [];
+                if (!empty($data['procurement_status'])) $projectUpdateData['procurement_status'] = $data['procurement_status'];
+                if (!empty($data['module'])) $projectUpdateData['module'] = $data['module'];
+                if (!empty($data['module_quantity'])) $projectUpdateData['module_quantity'] = $this->parseInteger($data['module_quantity']);
+                if (!empty($data['inverter'])) $projectUpdateData['inverter'] = $data['inverter'];
+                if (!empty($data['roof_type'])) $projectUpdateData['roof_type'] = $data['roof_type'];
+                if (!empty($data['category'])) $projectUpdateData['category'] = $data['category'];
+                
+                if (!empty($projectUpdateData)) {
+                    $project->update($projectUpdateData);
                 }
 
-                ProjectItem::updateOrCreate(
-                    [
-                        'project_id' => $data['project_id'],
-                        'item_id' => $item->item_id,
-                    ],
-                    [
-                        'quantity' => $this->parseInteger($data['quantity'] ?? 1),
-                    ]
-                );
+                // 2. Update/Create Project Materials (Normalized Structure)
+                // Get all materials from database with their codes
+                $materials = \App\Models\Material::pluck('id', 'code');
+                
+                // Delete existing materials for this project (clean slate approach)
+                \App\Models\ProjectMaterial::where('project_id', $project->project_id)->delete();
+                
+                // Store remark separately if it exists
+                $remarkText = $data['remark'] ?? null;
+                $firstMaterialCreated = false;
+                
+                // Insert new material quantities dynamically
+                foreach ($materials as $code => $materialId) {
+                    $quantity = $this->parseInteger($data[$code] ?? 0);
+                    
+                    if ($quantity > 0) {
+                        \App\Models\ProjectMaterial::create([
+                            'project_id' => $project->project_id,
+                            'material_id' => $materialId,
+                            'quantity' => $quantity,
+                            // Attach remark to first material only (to avoid duplication)
+                            'remark' => (!$firstMaterialCreated && $remarkText) ? $remarkText : null,
+                        ]);
+                        
+                        $firstMaterialCreated = true;
+                    }
+                }
+
 
                 $imported++;
             } catch (\Exception $e) {
@@ -974,6 +1315,7 @@ class DataImportController extends Controller
 
     /**
      * Helper: Map row data to array based on header mapping
+     * (Existing helper methods continue here...)
      */
     private function mapRowToArray($headers, $row, $mapping)
     {
@@ -1005,8 +1347,11 @@ class DataImportController extends Controller
      */
     private function parseInteger($value)
     {
-        if (empty($value)) return 0;
-        return (int)filter_var($value, FILTER_SANITIZE_NUMBER_INT);
+        if ($value === null || $value === '') return null;
+        if (is_numeric($value)) return (int)$value;
+        // Extract numbers from string
+        $cleaned = preg_replace('/[^0-9-]/', '', (string)$value);
+        return $cleaned !== '' ? (int)$cleaned : null;
     }
 
     /**
@@ -1032,6 +1377,19 @@ class DataImportController extends Controller
             return $timestamp ? date('Y-m-d', $timestamp) : null;
         } catch (\Exception $e) {
             return null;
+        }
+    }
+    
+    /**
+     * Helper: Update date field only if new value exists
+     */
+    private function updateDateField($project, $fieldName, $value)
+    {
+        $parsedDate = $this->parseDate($value);
+        if ($parsedDate !== null) {
+            // Workflow date fields are now in project_workflow_stages table
+            // The __set() magic method will handle saving them to the workflow_stages table
+            $project->{$fieldName} = $parsedDate;
         }
     }
 
