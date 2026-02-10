@@ -235,11 +235,13 @@ table tbody tr:hover {
                             </div>
                         </td>
                         <td class="py-2 px-3 text-center border-r border-gray-200">
+                            @if(in_array(auth()->user()->role ?? '', ['Project Manager', 'Supply Chain']))
                             <a href="{{ route('projects.materials.edit', $project->project_id) }}" 
                                class="inline-flex p-1.5 hover:bg-indigo-50 rounded-lg text-gray-500 hover:text-primary hover:shadow-md transition-all" 
                                title="Edit Materials">
                                 <i class="ri-edit-2-line text-base"></i>
                             </a>
+                            @endif
                         </td>
                         <td class="py-3 px-4 text-xs border-r border-gray-200">
                             @php

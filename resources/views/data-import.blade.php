@@ -171,6 +171,7 @@ Status column: "Status", "General Status", "Project Status", or "Current Status"
 </div>
 @endif
 
+@if(in_array(auth()->user()->role ?? '', ['Project Manager', 'Supply Chain', 'Finance']))
 <form action="{{ route('data-import.analyze') }}" method="post" enctype="multipart/form-data" class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
 @csrf
 <div class="flex-1 w-full">
@@ -185,6 +186,11 @@ Status column: "Status", "General Status", "Project Status", or "Current Status"
 Analyze File
 </button>
 </form>
+@else
+<div class="p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-lg">
+<p class="text-sm text-yellow-800"><i class="ri-lock-line mr-1"></i> You do not have permission to import data. Contact a Project Manager, Supply Chain, or Finance user.</p>
+</div>
+@endif
 </div>
 
 @if (session('import_sheets'))

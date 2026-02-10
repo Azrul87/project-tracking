@@ -68,7 +68,7 @@ body { font-family: 'Inter', sans-serif; }
         </div>
 
         <!-- User Management (PM only) -->
-        @if(strtolower($user->role ?? '') === 'project manager')
+        @if(in_array(strtolower($user->role ?? ''), ['project manager', 'admin']))
         <div class="col-span-1 bg-white rounded shadow-sm p-6">
             <h2 class="text-xl font-semibold text-gray-800 mb-4">User Management</h2>
 
@@ -98,11 +98,10 @@ body { font-family: 'Inter', sans-serif; }
                     <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
                     <select name="role" class="w-full rounded-button p-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary" required>
                         <option value="Project Manager">Project Manager</option>
-                        <option value="Technical Manager">Technical Manager</option>
-                        <option value="Finance">Finance</option>
-                        <option value="Authority">Authority</option>
+                        <option value="Admin">Admin</option>
+                        <option value="Sales">Sales</option>
                         <option value="Supply Chain">Supply Chain</option>
-                        <option value="Member">Member</option>
+                        <option value="Finance">Finance</option>
                     </select>
                 </div>
                 <div class="flex justify-end">
@@ -123,11 +122,10 @@ body { font-family: 'Inter', sans-serif; }
                             @method('PUT')
                             <select name="role" class="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary">
                                 <option value="Project Manager" {{ $u->role === 'Project Manager' ? 'selected' : '' }}>Project Manager</option>
-                                <option value="Technical Manager" {{ $u->role === 'Technical Manager' ? 'selected' : '' }}>Technical Manager</option>
-                                <option value="Finance" {{ $u->role === 'Finance' ? 'selected' : '' }}>Finance</option>
-                                <option value="Authority" {{ $u->role === 'Authority' ? 'selected' : '' }}>Authority</option>
+                                <option value="Admin" {{ $u->role === 'Admin' ? 'selected' : '' }}>Admin</option>
+                                <option value="Sales" {{ $u->role === 'Sales' ? 'selected' : '' }}>Sales</option>
                                 <option value="Supply Chain" {{ $u->role === 'Supply Chain' ? 'selected' : '' }}>Supply Chain</option>
-                                <option value="Member" {{ $u->role === 'Member' ? 'selected' : '' }}>Member</option>
+                                <option value="Finance" {{ $u->role === 'Finance' ? 'selected' : '' }}>Finance</option>
                             </select>
                             <button type="submit" class="text-sm text-indigo-600 hover:text-indigo-800">Update</button>
                         </form>

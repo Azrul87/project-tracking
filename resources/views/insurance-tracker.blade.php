@@ -27,6 +27,7 @@ body { font-family: 'Inter', sans-serif; }
 </div>
 @endif
 
+@if(auth()->user()->role === 'Project Manager')
 <div class="bg-white border-b px-6 py-3">
 <div class="flex items-center justify-end space-x-3">
 <button onclick="toggleForm()" class="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-white bg-primary rounded-button hover:bg-indigo-600 transition-colors whitespace-nowrap">
@@ -35,6 +36,7 @@ body { font-family: 'Inter', sans-serif; }
 </button>
 </div>
 </div>
+@endif
 
 <main class="container mx-auto px-6 py-6">
 <div id="policyForm" class="bg-white rounded shadow-sm p-6 mb-6" style="display: none;">
@@ -124,11 +126,13 @@ body { font-family: 'Inter', sans-serif; }
 <td class="py-3 pr-4 text-gray-600">{{ $policy->policy_date ? $policy->policy_date->format('Y-m-d') : '-' }}</td>
 <td class="py-3 pr-4 text-gray-600">{{ $policy->description ?? '-' }}</td>
 <td class="py-3 pr-4 text-right">
+@if(auth()->user()->role === 'Project Manager')
 <form action="{{ route('insurance-tracker.destroy', $policy->policy_id) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this policy?');">
     @csrf
     @method('DELETE')
     <button type="submit" class="px-2 py-1 text-xs text-red-600 hover:text-red-700">Delete</button>
 </form>
+@endif
 </td>
 </tr>
 @empty

@@ -13,7 +13,7 @@ class ProfileController extends Controller
     {
         $user = Auth::user();
         $users = [];
-        if ($this->isProjectManager($user)) {
+        if ($this->canManageUsers($user)) {
             $users = User::orderBy('name')->get();
         }
         return view('profile', compact('user', 'users'));
@@ -41,7 +41,7 @@ class ProfileController extends Controller
 
     public function storeUser(Request $request)
     {
-        $this->authorizeProjectManager();
+        $this->authorizeUserManagement();
 
         $validated = $request->validate([
             'user_id' => 'required|string|max:255|unique:users,user_id',
@@ -64,7 +64,7 @@ class ProfileController extends Controller
 
     public function updateRole(Request $request, $userId)
     {
-        $this->authorizeProjectManager();
+        $this->authorizeUserManagement();
 
         $validated = $request->validate([
             'role' => 'required|string|max:255',
@@ -79,7 +79,7 @@ class ProfileController extends Controller
 
     public function destroyUser($userId)
     {
-        $this->authorizeProjectManager();
+        $this->authorizeUserManagement();
 
         if (Auth::id() === $userId) {
             return back()->withErrors(['error' => 'You cannot delete yourself.']);
@@ -91,16 +91,17 @@ class ProfileController extends Controller
         return back()->with('success', 'User deleted successfully.');
     }
 
-    private function isProjectManager($user): bool
+    private function canManageUsers($user): bool
     {
-        return $user && strtolower($user->role ?? '') === 'project manager';
+        return $user && in_array(strtolower($user->role ?? ''), ['project manager', 'admin']);
     }
 
-    private function authorizeProjectManager(): void
+    private function authorizeUserManagement(): void
     {
-        if (!$this->isProjectManager(Auth::user())) {
-            abort(403, 'Only Project Manager can perform this action.');
+        if (!$this->canManageUsers(Auth::user())) {
+            abort(403, 'Only Project Manager and Admin can perform this action.');
         }
     }
 }
+
 

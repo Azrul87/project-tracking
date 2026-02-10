@@ -40,10 +40,12 @@ table tbody tr:hover {
 <h1 class="text-3xl font-extrabold text-gray-900">Client Management</h1>
 <p class="text-gray-600 mt-1">Manage your clients and their information</p>
 </div>
+@if(auth()->user()->role === 'Project Manager')
 <a href="{{ route('clients.create') }}" class="px-6 py-3 bg-gradient-to-r from-primary to-secondary text-white rounded-xl font-semibold hover:shadow-xl transition-all hover:scale-105 flex items-center gap-2">
 <i class="ri-add-line text-lg"></i>
 Add New Client
 </a>
+@endif
 </div>
 
 <!-- Search and Filters -->
@@ -176,6 +178,7 @@ Add New Client
    title="View Details">
 <i class="ri-eye-line text-lg"></i>
 </a>
+@if(auth()->user()->role === 'Project Manager')
 <a href="{{ route('clients.edit', $client->client_id) }}" 
    class="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
    title="Edit Client">
@@ -193,6 +196,7 @@ Add New Client
 <i class="ri-delete-bin-line text-lg"></i>
 </button>
 </form>
+@endif
 </div>
 </td>
 </tr>

@@ -13,12 +13,6 @@
 </div>
 </div>
 <div class="flex items-center space-x-3">
-<button class="p-2 rounded-full hover:bg-gray-100 relative !rounded-button">
-<div class="w-5 h-5 flex items-center justify-center">
-<i class="ri-notification-3-line"></i>
-</div>
-<span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-</button>
 <button class="p-2 rounded-full hover:bg-gray-100 !rounded-button">
 <div class="w-5 h-5 flex items-center justify-center">
 <a href="{{ route('profile.edit') }}"><i class="ri-settings-4-line"></i></a>
@@ -61,7 +55,9 @@
 <a href="/finance-overview" class="px-4 py-2 text-sm font-medium {{ request()->is('finance-overview') ? 'text-primary bg-indigo-50' : 'text-gray-700 hover:bg-gray-100' }} rounded-button transition-colors">Finance Overview</a>
 <a href="/insurance-tracker" class="px-4 py-2 text-sm font-medium {{ request()->is('insurance-tracker') ? 'text-primary bg-indigo-50' : 'text-gray-700 hover:bg-gray-100' }} rounded-button transition-colors">Insurance Tracker</a>
 <a href="{{ route('inventory') }}" class="px-4 py-2 text-sm font-medium {{ request()->routeIs('inventory') || request()->is('inventory*') ? 'text-primary bg-indigo-50' : 'text-gray-700 hover:bg-gray-100' }} rounded-button transition-colors">Materials</a>
+@if(in_array(auth()->user()->role ?? '', ['Project Manager', 'Supply Chain', 'Finance']))
 <a href="{{ route('data-import.index') }}" class="px-4 py-2 text-sm font-medium {{ request()->routeIs('data-import.*') || request()->is('data-import*') ? 'text-primary bg-indigo-50' : 'text-gray-700 hover:bg-gray-100' }} rounded-button transition-colors">Data Import</a>
+@endif
 
 </div>
 

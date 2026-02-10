@@ -159,10 +159,12 @@
                     <h1 class="text-4xl font-extrabold header-gradient mb-2">All Projects</h1>
                     <p class="text-gray-600 font-medium">Manage and track all your projects efficiently</p>
                 </div>
+                @if(in_array(auth()->user()->role ?? '', ['Project Manager', 'Sales']))
                 <a href="{{ route('projects.create') }}" class="btn-primary text-white px-6 py-3 rounded-xl font-semibold flex items-center space-x-2 shadow-lg">
                     <i class="ri-add-line text-xl"></i>
                     <span>Add Project</span>
                 </a>
+                @endif
             </div>
 
             @if(session('success'))
@@ -380,6 +382,7 @@
                                 <i class="ri-dashboard-line mr-2"></i>
                                 View Project
                             </a>
+                            @if(auth()->user()->role === 'Project Manager')
                             <div class="flex gap-2">
                                 <a href="{{ route('projects.edit', $project->project_id) }}" 
                                    class="flex-1 flex items-center justify-center px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-lg font-semibold hover:from-indigo-600 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg">
@@ -399,6 +402,7 @@
                                     </button>
                                 </form>
                             </div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -415,7 +419,11 @@
                             Try adjusting your filters or 
                             <a href="{{ route('projects.index') }}" class="text-primary hover:underline font-semibold">clear all filters</a>
                         @else
+                            @if(in_array(auth()->user()->role ?? '', ['Project Manager', 'Sales']))
                             <a href="{{ route('projects.create') }}" class="text-primary hover:underline font-semibold">Create your first project</a>
+                            @else
+                            No projects available yet
+                            @endif
                         @endif
                     </p>
                 </div>
